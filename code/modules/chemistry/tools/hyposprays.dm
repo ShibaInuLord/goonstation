@@ -1,9 +1,9 @@
 var/global/list/chem_whitelist = list("antihol", "charcoal", "epinephrine", "insulin", "mutadone", "teporone",\
-"silver_sulfadiazine", "salbutamol", "perfluorodecalin", "omnizine", "stimulants", "synaptizine", "anti_rad",\
+"silver_sulfadiazine", "salbutamol", "perfluorodecalin", "omnizine", "synaptizine", "anti_rad",\
 "oculine", "mannitol", "penteticacid", "styptic_powder", "methamphetamine", "spaceacillin", "saline",\
 "salicylic_acid", "cryoxadone", "blood", "bloodc", "synthflesh",\
 "menthol", "cold_medicine", "antihistamine", "ipecac",\
-"booster_enzyme", "anti_fart", "goodnanites")
+"booster_enzyme", "anti_fart", "goodnanites", "smelling_salt")
 
 /* =================================================== */
 /* -------------------- Hypospray -------------------- */
@@ -29,6 +29,7 @@ var/global/list/chem_whitelist = list("antihol", "charcoal", "epinephrine", "ins
 	var/image/fluid_image
 	var/sound/sound_inject = 'sound/items/hypo.ogg'
 	hide_attack = 2
+	inventory_counter_enabled = 1
 
 	emagged
 		New() // as it turns out it is me who is the dumb
@@ -37,7 +38,7 @@ var/global/list/chem_whitelist = list("antihol", "charcoal", "epinephrine", "ins
 
 	New()
 		..()
-		if (src.safe && islist(chem_whitelist) && chem_whitelist.len)
+		if (src.safe && islist(chem_whitelist) && length(chem_whitelist))
 			src.whitelist = chem_whitelist
 
 	proc/update_icon()
@@ -52,6 +53,7 @@ var/global/list/chem_whitelist = list("antihol", "charcoal", "epinephrine", "ins
 			src.icon_state = "hypo0"
 			src.name = "hypospray"
 			src.UpdateOverlays(null, "fluid")
+		src.inventory_counter.update_number(src.reagents.total_volume)
 		signal_event("icon_updated")
 
 	on_reagent_change(add)
@@ -110,7 +112,7 @@ var/global/list/chem_whitelist = list("antihol", "charcoal", "epinephrine", "ins
 		if (user)
 			user.show_text("[src]'s safeties have been reactivated.", "blue")
 		safe = 1
-		src.overlays = null
+		src.UpdateOverlays(null, "emagged")
 		src.update_icon()
 		return 1
 
@@ -132,7 +134,7 @@ var/global/list/chem_whitelist = list("antihol", "charcoal", "epinephrine", "ins
 		var/amt_prop = inj_amount == -1 ? src.reagents.total_volume : inj_amount
 		user.visible_message("<span class='notice'><B>[user] injects [M] with [min(amt_prop, reagents.total_volume)] units of [src.reagents.get_master_reagent_name()].</B></span>",\
 		"<span class='notice'>You inject [min(amt_prop, reagents.total_volume)] units of [src.reagents.get_master_reagent_name()]. [src] now contains [max(0,(src.reagents.total_volume-amt_prop))] units.</span>")
-		logTheThing("combat", user, M, "uses a hypospray [log_reagents(src)] to inject %target% at [log_loc(user)].")
+		logTheThing("combat", user, M, "uses a hypospray [log_reagents(src)] to inject [constructTarget(M,"combat")] at [log_loc(user)].")
 
 		src.reagents.trans_to(M, amt_prop)
 

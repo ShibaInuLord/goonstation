@@ -8,7 +8,7 @@
 	human_only = 0
 	pointCost = 4
 	can_use_in_container = 1
-	dont_lock_holder = 1
+	dont_lock_holder = 0
 
 	incapacitationCheck()
 		return 0
@@ -110,7 +110,7 @@
 	human_only = 0
 	pointCost = 0 // free for now, given you have to lose a fuckin' EYE
 	can_use_in_container = 1
-	dont_lock_holder = 1
+	dont_lock_holder = 0
 
 	incapacitationCheck()
 		return 0
@@ -203,7 +203,7 @@
 	human_only = 0
 	pointCost = 6
 	can_use_in_container = 1
-	dont_lock_holder = 1
+	dont_lock_holder = 0
 
 	incapacitationCheck()
 		return 0
@@ -295,7 +295,7 @@
 	human_only = 0
 	pointCost = 1
 	can_use_in_container = 1
-	dont_lock_holder = 1
+	dont_lock_holder = 0
 
 	incapacitationCheck()
 		return 0
@@ -494,7 +494,7 @@
 			return 1
 
 		//Do the actual control-granting here.
-		logTheThing("combat", holder.owner, HO, "granted control of their body to %target% as a changeling!")
+		logTheThing("combat", holder.owner, HO, "granted control of their body to [constructTarget(HO,"combat")] as a changeling!")
 		//Transfer the owner's mind into a hivemind observer and grant it the recovery verb
 		var/mob/dead/target_observer/hivemind_observer/master = H.insert_into_hivemind(H.owner)
 		master.verbs += /mob/dead/target_observer/hivemind_observer/proc/regain_control

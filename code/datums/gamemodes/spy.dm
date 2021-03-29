@@ -38,7 +38,7 @@
 	var/i = rand(5)
 	var/num_teams = max(setup_min_teams, min(round((num_players + i) / 7), setup_max_teams))
 	if (num_teams > leaders_possible.len)
-		num_teams = leaders_possible.len
+		num_teams = length(leaders_possible)
 
 	var/list/chosen_spies = antagWeighter.choose(pool = leaders_possible, role = "spy", amount = num_teams, recordChosen = 1)
 	for (var/datum/mind/spy in chosen_spies)
@@ -90,7 +90,7 @@
 	for(var/A in possible_modes)
 		intercepttext += i_text.build(A, pick(leaders))
 
-	for (var/obj/machinery/communications_dish/C in comm_dishes)
+	for_by_tcl(C, /obj/machinery/communications_dish)
 		C.add_centcom_report("Cent. Com. Status Summary", intercepttext)
 
 	command_alert("Summary downloaded and printed out at all communications consoles.", "Enemy communication intercept. Security Level Elevated.")
@@ -178,7 +178,7 @@
 		text = ""
 		if(leader_mind.current)
 			text += "[leader_mind.current.real_name]"
-			var/turf/T = get_turf_loc(leader_mind.current)
+			var/turf/T = get_turf(leader_mind.current)
 			if(isdead(leader_mind.current))
 				text += " (Dead)"
 			else
@@ -315,7 +315,7 @@
 			return
 
 		if (override == -1)
-			logTheThing("combat", M, Implanter, "'s loyalties are unchanged! (Injector: %target%)")
+			logTheThing("combat", M, Implanter, "'s loyalties are unchanged! (Injector: [constructTarget(Implanter,"combat")])")
 			boutput(M, "<h1><font color=red>Your loyalties are unaffected! You have resisted this new implant!</font></h1>")
 			return
 
@@ -350,7 +350,7 @@
 
 			src.linked_objective.explanation_text = "Obey [leader_name]'s every order."
 
-		if (leader_mind && leader_mind.current && M.client)
+		if (leader_mind?.current && M.client)
 			var/I = image(antag_spyleader, loc = leader_mind.current)
 			M.client.images += I
 
@@ -361,7 +361,7 @@
 		..()
 
 		if (leader_name)
-			boutput(M, "<h1><font color=red>Your loyalty to [(leader_mind && leader_mind.current) ? leader_mind.current.real_name : leader_name] fades away!</font></h1>")
+			boutput(M, "<h1><font color=red>Your loyalty to [leader_mind?.current ? leader_mind.current.real_name : leader_name] fades away!</font></h1>")
 
 			if (istype(ticker.mode, /datum/game_mode/spy))
 				var/datum/game_mode/spy/spymode = ticker.mode

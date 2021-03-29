@@ -29,7 +29,7 @@
 	buildTooltipContent()
 		. = ..()
 		var/list/L = get_contents()
-		. += "<br>Holding [L.len]/[slots] objects"
+		. += "<br>Holding [length(L)]/[slots] objects"
 		lastTooltipContent = .
 
 	New()
@@ -65,7 +65,7 @@
 		return
 
 	proc/make_my_stuff() // use this rather than overriding the container's New()
-		if (!islist(src.spawn_contents) || !src.spawn_contents.len)
+		if (!islist(src.spawn_contents) || !length(src.spawn_contents))
 			return 0
 		var/total_amt = 0
 		for (var/thing in src.spawn_contents)
@@ -94,12 +94,16 @@
 			SPAWN_DBG(1 DECI SECOND)
 				O.attack_hand(user)
 		else if (isitem(O) && !istype(O, /obj/item/storage) && !O.anchored)
-			src.attackby(O, user)
+			src.attackby(O, user, O.loc)
 
-	attackby(obj/item/W, mob/user, params, obj/item/storage/T) // T for transfer - transferring items from one storage obj to another
+	//failure returns 0 or lower for diff messages - sorry
+	proc/check_can_hold(obj/item/W)
+		if (!W)
+			return 0
+		.= 1
 		if (W.cant_drop)
-			return
-		if (islist(src.can_hold) && src.can_hold.len)
+			return -1
+		if (islist(src.can_hold) && length(src.can_hold))
 			var/ok = 0
 			if (src.in_list_or_max && W.w_class <= src.max_wclass)
 				ok = 1
@@ -108,17 +112,30 @@
 					if (ispath(A) && istype(W, A))
 						ok = 1
 			if (!ok)
-				boutput(user, "<span class='alert'>[src] cannot hold [W].</span>")
-				return
+				return 0
 
 		else if (W.w_class > src.max_wclass)
-			boutput(user, "<span class='alert'>[W] won't fit into [src]!</span>")
-			return
+			return -1
 
 		var/list/my_contents = src.get_contents()
 		if (my_contents.len >= slots)
-			boutput(user, "<span class='alert'>[src] is full!</span>")
-			return 0
+			return -2
+
+	attackby(obj/item/W, mob/user, obj/item/storage/T) // T for transfer - transferring items from one storage obj to another
+		if (W == src)
+			// Putting self in self! Was possible if weight class allows it, causing storage to disappear
+			boutput(user, "<span class='alert'>You can't put [W] into itself!</span>")
+			return
+		var/canhold = src.check_can_hold(W,user)
+		if (canhold <= 0)
+			switch (canhold)
+				if(0)
+					boutput(user, "<span class='alert'>[src] cannot hold [W].</span>")
+				if(-1)
+					boutput(user, "<span class='alert'>[W] won't fit into [src]!</span>")
+				if(-2)
+					boutput(user, "<span class='alert'>[src] is full!</span>")
+			return
 
 		var/atom/checkloc = src.loc // no infinite loops for you
 		while (checkloc && !isturf(src.loc))
@@ -133,10 +150,10 @@
 			src.add_contents(W)
 			T.hud.remove_item(W)
 		else
-			user.u_equip(W)
-			W.dropped(user)
 			src.add_contents(W)
-		hud.add_item(W)
+			user.u_equip(W)
+		hud.add_item(W, user)
+		update_icon()
 		add_fingerprint(user)
 		animate_storage_rustle(src)
 		if (!src.sneaky && !istype(W, /obj/item/gun/energy/crossbow))
@@ -146,7 +163,7 @@
 
 	dropped(mob/user as mob)
 		if (hud)
-			hud.update()
+			hud.update(user)
 		..()
 
 	proc/mousetrap_check(mob/user)
@@ -167,7 +184,7 @@
 
 	MouseDrop(atom/over_object, src_location, over_location)
 		..()
-		var/obj/screen/hud/S = over_object
+		var/atom/movable/screen/hud/S = over_object
 		if (istype(S))
 			playsound(src.loc, "rustle", 50, 1, -5)
 			if (!usr.restrained() && !usr.stat && src.loc == usr)
@@ -181,14 +198,14 @@
 							usr.u_equip(src)
 							usr.put_in_hand(src, 1)
 				return
-		if (over_object == usr && in_range(src, usr) && isliving(usr) && !usr.stat)
+		if (over_object == usr && in_interact_range(src, usr) && isliving(usr) && !usr.stat)
 			if (usr.s_active)
 				usr.detach_hud(usr.s_active)
 				usr.s_active = null
 			if (src.mousetrap_check(usr))
 				return
 			usr.s_active = src.hud
-			hud.update()
+			hud.update(usr)
 			usr.attach_hud(src.hud)
 			return
 		if (usr.is_in_hands(src))
@@ -233,16 +250,16 @@
 			if (src.mousetrap_check(user))
 				return
 			user.s_active = src.hud
-			hud.update()
+			hud.update(user)
 			user.attach_hud(src.hud)
 			src.add_fingerprint(user)
 			animate_storage_rustle(src)
 		else
 			..()
-			for (var/mob/M in hud.mobs)
+			for (var/mob/M as anything in hud.mobs)
 				if (M != user)
 					M.detach_hud(hud)
-			hud.update()
+			hud.update(user)
 
 	attack_self(mob/user as mob)
 		..()
@@ -250,21 +267,20 @@
 
 	proc/get_contents()
 		RETURN_TYPE(/list)
-		var/list/cont = src.contents.Copy()
-		for(var/atom/A in cont)
+		. = src.contents.Copy()
+		for(var/atom/A as anything in .)
 			if(!istype(A, /obj/item) || istype(A, /obj/item/grab))
-				cont.Remove(A)
-		return cont
+				. -= A
 
 	proc/add_contents(obj/item/I)
 		I.set_loc(src)
 
 	proc/get_all_contents()
-		var/list/L = list()
-		L += get_contents()
-		for (var/obj/item/storage/S in get_contents())
-			L += S.get_all_contents()
-		return L
+		. = list()
+		var/our_contents = get_contents()
+		. += our_contents
+		for (var/obj/item/storage/S in our_contents)
+			. += S.get_all_contents()
 
 /obj/item/storage/box
 	name = "box"
@@ -272,11 +288,11 @@
 	desc = "A box that can hold a number of small items."
 	max_wclass = 2
 
-	attackby(obj/item/W as obj, mob/user as mob)
+	attackby(obj/item/W as obj, mob/user as mob, obj/item/storage/T)
 		if (istype(W, /obj/item/storage/toolbox) || istype(W, /obj/item/storage/box) || istype(W, /obj/item/storage/belt))
 			var/obj/item/storage/S = W
 			for (var/obj/item/I in S.get_contents())
-				if (..(I, user, null, S) == 0)
+				if (..(I, user, S) == 0)
 					break
 			return
 		else
@@ -286,8 +302,10 @@
 	spawn_contents = list(/obj/item/clothing/mask/breath)
 	make_my_stuff()
 		..()
-		if (prob(15))
+		if (prob(15) || ticker?.round_elapsed_ticks > 20 MINUTES) //aaaaaa
 			new /obj/item/tank/emergency_oxygen(src)
+		if (ticker?.round_elapsed_ticks > 20 MINUTES)
+			new /obj/item/crowbar/red(src)
 		if (prob(10)) // put these together
 			new /obj/item/clothing/suit/space/emerg(src)
 			new /obj/item/clothing/head/emerg(src)
@@ -308,6 +326,7 @@
 /obj/item/storage/briefcase
 	name = "briefcase"
 	icon_state = "briefcase"
+	inhand_image_icon = 'icons/mob/inhand/hand_general.dmi'
 	item_state = "briefcase"
 	flags = FPRINT | TABLEPASS| CONDUCT | NOSPLASH
 	force = 8.0
@@ -325,7 +344,16 @@
 
 	New()
 		..()
-		BLOCK_BOOK
+		BLOCK_SETUP(BLOCK_BOOK)
+
+/obj/item/storage/briefcase/toxins
+	name = "toxins research briefcase"
+	icon_state = "briefcase_rd"
+	inhand_image_icon = 'icons/mob/inhand/hand_general.dmi'
+	item_state = "rd-case"
+	max_wclass = 4 // parity with secure briefcase
+	desc = "A large briefcase for experimental toxins research."
+	spawn_contents = list(/obj/item/raw_material/molitz_beta = 6)
 
 /obj/item/storage/desk_drawer
 	name = "desk drawer"
@@ -340,7 +368,7 @@
 	var/locked = 0
 	var/id = null
 
-	attackby(obj/item/W as obj, mob/user as mob)
+	attackby(obj/item/W as obj, mob/user as mob, obj/item/storage/T)
 		if (istype(W, /obj/item/device/key/filing_cabinet))
 			var/obj/item/device/key/K = W
 			if (src.id && K.id == src.id)
@@ -382,15 +410,10 @@
 		if (!I)
 			return
 
-		I.throwforce += 8 //Ugly. Who cares.
-		SPAWN_DBG(1.5 SECONDS)
-			if (I)
-				I.throwforce -= 8
-
 		I.set_loc(get_turf(src.loc))
 		I.dropped()
 		src.hud.remove_item(I) //fix the funky UI stuff
 		I.layer = initial(I.layer)
-		I.throw_at(target, 8, 2)
+		I.throw_at(target, 8, 2, bonus_throwforce=8)
 
 		playsound(src, 'sound/effects/singsuck.ogg', 40, 1)

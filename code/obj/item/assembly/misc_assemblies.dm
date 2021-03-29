@@ -247,7 +247,7 @@ Contains:
 
 /obj/item/assembly/prox_ignite/HasProximity(atom/movable/AM as mob|obj)
 
-	if (istype(AM, /obj/projectile))
+	if (isobserver(AM) || iswraith(AM) || isintangible(AM) || istype(AM, /obj/projectile))
 		return
 	if (AM.move_speed < 12 && src.part1)
 		src.part1.sense()
@@ -339,8 +339,6 @@ Contains:
 			src.part5.set_loc(T)
 			src.part5.master = null
 			src.part5 = null
-
-		//SN src = null
 		user.u_equip(src)
 		qdel(src)
 		return
@@ -662,7 +660,7 @@ Contains:
 
 /obj/item/assembly/anal_ignite/New()
 	..()
-	SPAWN_DBG (5)
+	SPAWN_DBG(0.5 SECONDS)
 		if (src && !src.part1)
 			src.part1 = new /obj/item/device/analyzer/healthanalyzer(src)
 			src.part1.master = src
@@ -727,15 +725,12 @@ Contains:
 	return
 
 obj/item/assembly/radio_horn/attack_self(mob/user as mob)
-
 	src.part1.attack_self(user)
 	src.add_fingerprint(user)
 	return
 
 obj/item/assembly/radio_horn/receive_signal()
-	if (part2.next_play >= TIME)
-		part2.next_play = TIME + part2.note_time
-		part2.play_note(rand(1,part2.sounds_instrument.len), user = null)
+	part2.play_note(rand(1,part2.sounds_instrument.len), user = null)
 	return
 
 /////////////////////////////////////////////////////// Remote signaller/timer /////////////////////////////////////
@@ -864,7 +859,7 @@ obj/item/assembly/radio_horn/receive_signal()
 	return
 
 /obj/item/assembly/rad_prox/Move()
-	..()
+	. = ..()
 	src.part2.sense()
 	return
 

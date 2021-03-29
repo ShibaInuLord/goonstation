@@ -62,9 +62,7 @@
 				return
 			do_teleport(M, linked_computer.locked, 0) //dead-on precision
 		else
-			var/datum/effects/system/spark_spread/s = unpool(/datum/effects/system/spark_spread)
-			s.set_up(5, 1, src)
-			s.start()
+			elecflash(src, power=3)
 
 	proc/find_links()
 		linked_computer = null
@@ -160,14 +158,6 @@
 		if (linked_rings.len > 0) found++
 		return found
 
-/proc/find_loc(obj/R as obj)
-	if (!R)	return null
-	var/turf/T = R.loc
-	while(!istype(T, /turf))
-		T = T.loc
-		if(!T || istype(T, /area))	return null
-	return T
-
 /proc/do_teleport(atom/movable/M as mob|obj, atom/destination, precision, var/use_teleblocks = 1, var/sparks = 1)
 	if(istype(M, /obj/effects))
 		qdel(M)
@@ -199,7 +189,7 @@
 	var/m_blocked = 0
 
 
-	for (var/atom in teleport_jammers)
+	for (var/atom in by_cat[TR_CAT_TELEPORT_JAMMERS])
 		var/atom/A = atom
 		if (get_dist(tmploc,A) <= 5)
 			if (istype(atom, /obj/machinery/telejam))
@@ -224,7 +214,8 @@
 				break
 
 	//if((istype(tmploc,/area/wizard_station)) || (istype(tmploc,/area/syndicate_station)))
-	if ((istype(tmploc.loc, /area) && tmploc.loc:teleport_blocked) || m_blocked)
+	var/area/myArea = get_area(tmploc)
+	if (myArea?.teleport_blocked || m_blocked)
 		if(use_teleblocks)
 			if(isliving(M))
 				boutput(M, "<span class='alert'><b>Teleportation failed!</b></span>")
@@ -235,9 +226,7 @@
 
 	M.set_loc(tmploc)
 	if (sparks)
-		var/datum/effects/system/spark_spread/s = unpool(/datum/effects/system/spark_spread)
-		s.set_up(5, 1, M)
-		s.start()
+		elecflash(M, power=3)
 	return
 
 // /mob/living/carbon/human/list_ejectables() looked pretty similar to what I wanted, but this doesn't have organs that you need to live
@@ -248,7 +237,7 @@ proc/splinch(var/mob/M as mob, var/probability)
 			var/mob/living/carbon/human/H = M
 			var/part_splinched
 
-			part_splinched = pick("l_arm", "r_arm", "l_leg", "l_leg","left_eye", "right_eye", "left_lung", "right_lung", "butt", "left_kidney", "right_kidney", "spleen", "pancreas", "appendix", "stomach", "intestines")
+			part_splinched = pick("l_arm", "r_arm", "l_leg", "l_leg","left_eye", "right_eye", "left_lung", "right_lung", "butt", "left_kidney", "right_kidney", "spleen", "pancreas", "appendix", "stomach", "intestines", "tail")
 			if (part_splinched == "l_arm" || part_splinched == "r_arm" || part_splinched == "l_leg" || part_splinched == "l_leg")
 				return H.sever_limb(part_splinched)
 			else

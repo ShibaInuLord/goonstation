@@ -16,16 +16,12 @@
 	col_r = 0.7
 	col_g = 0.3
 	col_b = 0.3
-	var/datum/effects/system/spark_spread/spark_system
 	var/sparks = 7
 	var/burnt = 0
 
 
 	New()
 		..()
-		src.spark_system = unpool(/datum/effects/system/spark_spread)
-		spark_system.set_up(5, 0, src)
-		spark_system.attach(src)
 
 	attack_self(mob/user as mob)
 		if (src.on)
@@ -77,8 +73,7 @@
 
 	proc/gen_sparks()
 		src.sparks--
-		spark_system.set_up(1, 0, src)
-		src.spark_system.start()
+		elecflash(src)
 		if(!sparks)
 			src.put_out()
 			src.burnt = 1
@@ -101,8 +96,7 @@
 			src.icon_state = src.icon_on
 			src.item_state = src.item_on
 			light.enable()
-			if (!(src in processing_items))
-				processing_items.Add(src)
+			processing_items |= src
 			if(user)
 				user.update_inhands()
 		return
@@ -116,8 +110,7 @@
 			src.icon_state = src.icon_off
 			src.item_state = src.item_off
 			light.disable()
-			if (src in processing_items)
-				processing_items.Remove(src)
+			processing_items -= src
 			if(user)
 				user.update_inhands()
 		return
@@ -140,7 +133,7 @@
 				src.open = 1
 				src.icon_state = "sparkler_box-open"
 				playsound(src.loc, "sound/impact_sounds/Generic_Snap_1.ogg", 20, 1, -2)
-				boutput(usr, "<span class='notice'>You snap open the child-protective safety tape on [src].</span>")
+				boutput(user, "<span class='notice'>You snap open the child-protective safety tape on [src].</span>")
 		else
 			..()
 
@@ -151,11 +144,11 @@
 			src.open = 1
 			src.icon_state = "sparkler_box-open"
 			playsound(src.loc, "sound/impact_sounds/Generic_Snap_1.ogg", 20, 1, -2)
-			boutput(usr, "<span class='notice'>You snap open the child-protective safety tape on [src].</span>")
+			boutput(user, "<span class='notice'>You snap open the child-protective safety tape on [src].</span>")
 
 	MouseDrop(atom/over_object, src_location, over_location)
 		if(!src.open)
-			if (over_object == usr && in_range(src, usr) && isliving(usr) && !usr.stat)
+			if (over_object == usr && in_interact_range(src, usr) && isliving(usr) && !usr.stat)
 				return
 			if (usr.is_in_hands(src))
 				return

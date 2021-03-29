@@ -36,7 +36,7 @@
 			var/decrease_chance = 2 // defaults to 2 because blood does clot and all, but we want bleeding to maybe not stop entirely on its own TOO easily, and there's only so much clotting can do when all your blood is falling out at once
 			var/surgery_increase_chance = 5 //likelihood we bleed more bc we are being surgeried or have open cuts
 
-			if (owner.bleeding > 1 && owner.bleeding < 4) // midrange bleeding gets a better chance to drop down
+			if (owner.bleeding > 1)
 				decrease_chance += 3
 			else
 				surgery_increase_chance += 10
@@ -49,16 +49,15 @@
 
 			if (owner.get_surgery_status())
 				decrease_chance -= 1
-			if (prob(decrease_chance))
+
+			if (prob(percentmult(decrease_chance, mult)))
 				owner.bleeding -= 1 * mult
 				boutput(owner, "<span class='notice'>Your wounds feel [pick("better", "like they're healing a bit", "a little better", "itchy", "less tender", "less painful", "like they're closing", "like they're closing up a bit", "like they're closing up a little")].</span>")
 
-			if (owner.bleeding < 0) //INVERSE BLOOD LOSS was a fun but ultimately easily fixed bug
-				owner.bleeding = 0
-
 			if (prob(surgery_increase_chance) && owner.get_surgery_status())
-				owner.bleeding += 1 * mult
+				owner.bleeding += (1*mult)
 
+			owner.bleeding = clamp(owner.bleeding, 0, 5)
 
 			if (owner.blood_volume)
 				var/final_bleed = clamp(owner.bleeding, 0, 5) // trying this at 5 being the max
@@ -166,7 +165,7 @@
 					boutput(owner, "<span class='alert'><b>You feel [feeling]!</b></span>")
 					owner.changeStatus("weakened", (4 * mult) SECONDS)
 				owner.contract_disease(/datum/ailment/malady/shock, null, null, 1) // if you have no blood you're gunna be in shock
-				owner.add_stam_mod_regen("hypotension", -3)
+				APPLY_MOB_PROPERTY(owner, PROP_STAMINA_REGEN_BONUS, "hypotension", -3)
 				owner.add_stam_mod_max("hypotension", -15)
 
 			if (1 to 374) // very low (90/60)
@@ -185,7 +184,7 @@
 					owner.changeStatus("weakened", (3 * mult) SECONDS)
 				if (prob(25))
 					owner.contract_disease(/datum/ailment/malady/shock, null, null, 1)
-				owner.add_stam_mod_regen("hypotension", -2)
+				APPLY_MOB_PROPERTY(owner, PROP_STAMINA_REGEN_BONUS, "hypotension", -2)
 				owner.add_stam_mod_max("hypotension", -10)
 
 			if (375 to 414) // low (100/65)
@@ -197,12 +196,12 @@
 					boutput(owner, "<span class='alert'><b>You feel [extreme][feeling]!</b></span>")
 				if (prob(5))
 					owner.contract_disease(/datum/ailment/malady/shock, null, null, 1)
-				owner.add_stam_mod_regen("hypotension", -1)
+				APPLY_MOB_PROPERTY(owner, PROP_STAMINA_REGEN_BONUS, "hypotension", -1)
 				owner.add_stam_mod_max("hypotension", -5)
 
 			if (415 to 584) // normal (120/80)
-				owner.remove_stam_mod_regen("hypertension")
-				owner.remove_stam_mod_regen("hypotension")
+				REMOVE_MOB_PROPERTY(owner, PROP_STAMINA_REGEN_BONUS, "hypertension")
+				REMOVE_MOB_PROPERTY(owner, PROP_STAMINA_REGEN_BONUS, "hypotension")
 				owner.remove_stam_mod_max("hypertension")
 				owner.remove_stam_mod_max("hypotension")
 				return ..()
@@ -219,7 +218,7 @@
 					owner.emote("gasp")
 				if (prob(1) && prob(10))
 					owner.contract_disease(/datum/ailment/malady/heartdisease,null,null,1)
-				owner.add_stam_mod_regen("hypertension", -1)
+				APPLY_MOB_PROPERTY(owner, PROP_STAMINA_REGEN_BONUS, "hypertension", -1)
 				owner.add_stam_mod_max("hypertension", -5)
 
 			if (666 to 749) // very high (160/100)
@@ -235,7 +234,7 @@
 					owner.emote("gasp")
 				if (prob(1))
 					owner.contract_disease(/datum/ailment/malady/heartdisease,null,null,1)
-				owner.add_stam_mod_regen("hypertension", -2)
+				APPLY_MOB_PROPERTY(owner, PROP_STAMINA_REGEN_BONUS, "hypertension", -2)
 				owner.add_stam_mod_max("hypertension", -10)
 
 			if (750 to INFINITY) // critically high (180/110)
@@ -258,7 +257,7 @@
 					owner.visible_message("<span class='alert'>[owner] coughs up a little blood!</span>")
 					playsound(get_turf(owner), "sound/impact_sounds/Slimy_Splat_1.ogg", 30, 1)
 					bleed(owner, rand(1,2) * mult, 1)
-				owner.add_stam_mod_regen("hypertension", -3)
+				APPLY_MOB_PROPERTY(owner, PROP_STAMINA_REGEN_BONUS, "hypertension", -3)
 				owner.add_stam_mod_max("hypertension", -15)
 
 		..()

@@ -147,10 +147,7 @@ Contents:
 
 	special_setup(mob/M, no_special_spawn)
 		. = ..()
-#if ASS_JAM
-		if(prob(50))
-			bad_traitorify(M, "Samurai")
-#endif
+
 
 // Objects
 
@@ -224,12 +221,14 @@ Contents:
 */
 
 /obj/decal/fakeobjects/kanji_1
+	plane = PLANE_FLOOR
 	name = "symbol"
 	icon = 'icons/effects/96x96.dmi'
 	icon_state = "kanji_1"
 	anchored = 2
 
 /obj/decal/fakeobjects/kanji_2
+	plane = PLANE_FLOOR
 	name = "symbol"
 	icon = 'icons/effects/96x96.dmi'
 	icon_state = "kanji_2"
@@ -583,3 +582,24 @@ Contents:
 
 /turf/unsimulated/floor/dojo/sand/circle
 	icon_state = "sand_circ"
+
+// Simulated variants of turfs
+
+/turf/simulated/floor/dojo/sand
+	name = "zen garden"
+	icon = 'icons/turf/dojo.dmi'
+	icon_state = "sand"
+
+	horizontal
+		icon_state = "sand_horiz"
+
+	vertical
+		icon_state = "sand_vert"
+
+	circle
+		icon_state = "sand_circ"
+
+/turf/simulated/floor/dojo/stone
+	name = "stone"
+	icon = 'icons/turf/dojo.dmi'
+	icon_state = "stone"

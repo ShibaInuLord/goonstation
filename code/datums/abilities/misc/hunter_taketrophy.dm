@@ -45,7 +45,7 @@
 
 			else
 				var/mob/living/carbon/human/HH = target
-				if (!ischangeling(HH) && (ismonkey(HH) || HH.bioHolder && HH.bioHolder.HasEffect("monkey"))) // Lesser form doesn't count.
+				if (isnpcmonkey(HH)) // Lesser form doesn't count.
 					boutput(M, __red("This pitiful creature isn't worth your time."))
 					return 1
 
@@ -142,7 +142,7 @@
 							W.dropped(HH)
 							W.layer = initial(W.layer)
 
-				logTheThing("combat", M, HH, "uses take trophy on %target%, gibbing them at [log_loc(M)].")
+				logTheThing("combat", M, HH, "uses take trophy on [constructTarget(HH,"combat")], gibbing them at [log_loc(M)].")
 				HH.gib(1)
 
 		else

@@ -32,6 +32,12 @@
 	var/oldx = 0
 	var/oldy = 0
 
+	ranch
+		name = "autoname"
+		network = "ranch"
+		color = "#AAFF99"
+		c_tag = "autotag"
+
 /obj/machinery/camera/process()
 	.=..()
 	if(!isturf(src.loc)) //This will end up removing coverage if camera is inside a thing.
@@ -82,7 +88,7 @@
 	duration = 150
 	interrupt_flags = INTERRUPT_MOVE | INTERRUPT_ACT | INTERRUPT_STUNNED | INTERRUPT_ACTION
 	id = "cameraSecure"
-	icon = 'icons/obj/items/items.dmi'
+	icon = 'icons/obj/items/tools/screwdriver.dmi'
 	icon_state = "screwdriver"
 	var/obj/machinery/camera/television/cam
 	var/secstate
@@ -120,7 +126,7 @@
 /obj/machinery/camera/New()
 	..()
 
-	cameras.Add(src)
+	START_TRACKING
 	SPAWN_DBG(1 SECOND)
 		addToNetwork()
 		updateCoverage() //Make sure coverage is updated. (must happen in spawn!)
@@ -138,7 +144,7 @@
 		camnets[network] = net
 
 /obj/machinery/camera/proc/addToReferrers(var/obj/machinery/camera/C) //Safe addition
-	if(!(C in referrers)) referrers += C
+	referrers |= C
 
 /obj/machinery/camera/proc/removeNode(var/obj/machinery/camera/node) //Completely remove a node from this camera
 	for(var/N in list("c_north", "c_east", "c_south", "c_west"))
@@ -153,6 +159,7 @@
 
 
 /obj/machinery/camera/disposing()
+	STOP_TRACKING
 	if (coveredTiles) //ZeWaka: Fix for null.Copy()
 		for(var/turf/O in coveredTiles.Copy()) //Remove all coverage
 			O.removeCameraCoverage(src)
@@ -162,8 +169,6 @@
 
 	if(camnets && camnets[network])
 		camnets[network].Remove(src)
-
-	cameras.Remove(src)
 
 
 	if (c_north)
@@ -175,7 +180,7 @@
 	if (c_west)
 		c_west.referrers -= src
 
-	for(var/obj/machinery/camera/C in referrers)
+	for(var/obj/machinery/camera/C as anything in referrers)
 		if (C.c_north == src)
 			C.c_north = null
 		if (C.c_east == src)
@@ -206,6 +211,7 @@
 
 /obj/machinery/camera/emp_act()
 	..()
+	if(!src.network) return //avoid stacking emp
 	if(!istype(src, /obj/machinery/camera/television)) //tv cams were getting messed up
 		src.icon_state = "cameraemp"
 	src.network = null                   //Not the best way but it will do. I think.
@@ -307,14 +313,14 @@
 			if (isAI(O))
 				boutput(O, "[user] holds a paper up to one of your cameras ...")
 				O.Browse(text("<HTML><HEAD><TITLE>[]</TITLE></HEAD><BODY><TT>[]</TT></BODY></HTML>", X.name, X.info), text("window=[]", X.name))
-				logTheThing("station", user, O, "holds up a paper to a camera at [log_loc(src)], forcing %target% to read it. <b>Title:</b> [X.name]. <b>Text:</b> [adminscrub(X.info)]")
+				logTheThing("station", user, O, "holds up a paper to a camera at [log_loc(src)], forcing [constructTarget(O,"station")] to read it. <b>Title:</b> [X.name]. <b>Text:</b> [adminscrub(X.info)]")
 			else
 				var/obj/machinery/computer/security/S = O.using_dialog_of_type(/obj/machinery/computer/security)
 				if (S)
 					if (S.current == src)
 						boutput(O, "[user] holds a paper up to one of the cameras ...")
 						O.Browse(text("<HTML><HEAD><TITLE>[]</TITLE></HEAD><BODY><TT>[]</TT></BODY></HTML>", X.name, X.info), text("window=[]", X.name))
-						logTheThing("station", user, O, "holds up a paper to a camera at [log_loc(src)], forcing %target% to read it. <b>Title:</b> [X.name]. <b>Text:</b> [adminscrub(X.info)]")
+						logTheThing("station", user, O, "holds up a paper to a camera at [log_loc(src)], forcing [constructTarget(O,"station")] to read it. <b>Title:</b> [X.name]. <b>Text:</b> [adminscrub(X.info)]")
 
 //Return a working camera that can see a given mob
 //or null if none
@@ -322,7 +328,7 @@
 	.= 0
 	if (isturf(M.loc))
 		var/turf/T = M.loc
-		.= (T.cameras && T.cameras.len)
+		.= (T.cameras && length(T.cameras))
 
 
 /obj/machinery/camera/motion
@@ -400,8 +406,7 @@
 /proc/name_autoname_cameras()
 	var/list/counts_by_area = list()
 	var/list/obj/machinery/camera/first_cam_by_area = list()
-	for(var/X in cameras)
-		var/obj/machinery/camera/C = X
+	for(var/obj/machinery/camera/C as anything in by_type[/obj/machinery/camera])
 		if(!istype(C)) continue
 		if (dd_hasprefix(C.name, "autoname"))
 			var/area/where = get_area(C)
@@ -421,7 +426,9 @@
 
 /proc/build_camera_network()
 	name_autoname_cameras()
-	connect_camera_list(cameras)
+	var/list/cameras = by_type[/obj/machinery/camera]
+	if (!isnull(cameras))
+		connect_camera_list(by_type[/obj/machinery/camera])
 
 /proc/rebuild_camera_network()
 	if(defer_camnet_rebuild || !camnet_needs_rebuild) return
@@ -431,7 +438,7 @@
 	camnet_needs_rebuild = 0
 
 /proc/disconnect_camera_network()
-	for(var/obj/machinery/camera/C in cameras)
+	for_by_tcl(C, /obj/machinery/camera)
 		C.c_north = null
 		C.c_east = null
 		C.c_south = null
@@ -439,12 +446,12 @@
 		C.referrers.Cut()
 
 /proc/connect_camera_list(var/list/obj/machinery/camera/camlist, var/force_connection=0)
-	if( camlist.len < 1)  return 1
+	if(!length(camlist))  return 1
 
 	logTheThing("debug", null, null, "<B>SpyGuy/Camnet:</B> Starting to connect cameras")
 	var/count = 0
-	for(var/obj/machinery/camera/C in camlist)
-		if(!isturf(C.loc) || C.disposed || C.qdeled) //This is one of those weird internal cameras, or it's been deleted and hasn't had the decency to go away yet
+	for(var/obj/machinery/camera/C as anything in camlist)
+		if(QDELETED(C) || !isturf(C.loc)) //This is one of those weird internal cameras, or it's been deleted and hasn't had the decency to go away yet
 			continue
 
 

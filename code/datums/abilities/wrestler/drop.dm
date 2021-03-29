@@ -88,7 +88,7 @@
 				boutput(M, __red("You can't drop onto [target] from here!"))
 				return 0
 
-			SPAWN_DBG (0)
+			SPAWN_DBG(0)
 				if (M)
 					animate(M, transform = matrix(90, MATRIX_ROTATE), time = 1, loop = 0)
 				sleep (10)
@@ -115,7 +115,7 @@
 			target.force_laydown_standup()
 
 			M.pixel_y = 0
-			logTheThing("combat", M, target, "uses the [fake ? "fake " : ""]drop wrestling move on %target% at [log_loc(M)].")
+			logTheThing("combat", M, target, "uses the [fake ? "fake " : ""]drop wrestling move on [constructTarget(target,"combat")] at [log_loc(M)].")
 
 		else
 			if (M)

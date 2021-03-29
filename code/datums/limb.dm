@@ -14,6 +14,7 @@
 
 
 	New(var/obj/item/parts/holder)
+		..()
 		src.holder = holder
 
 		src.setDisarmSpecial (/datum/item_special/disarm)
@@ -70,6 +71,9 @@
 		user.lastattacked = target
 
 	proc/grab(mob/living/target, var/mob/living/user)
+		if(target == user)
+			user.grab_self()
+			return
 		if (issilicon(target))
 			return
 		user.grab_other(target)
@@ -124,10 +128,7 @@
 				user.visible_message("<span class='alert'>The shot misses!</span>")
 			else
 				MT.TakeDamageAccountArmor(user.zone_sel ? user.zone_sel.selecting : "All", brute, burn, 0, burn ? DAMAGE_BURN : DAMAGE_BLUNT)
-		SPAWN_DBG(0)
-			var/datum/effects/system/spark_spread/s = unpool(/datum/effects/system/spark_spread)
-			s.set_up(3, 1, target)
-			s.start()
+		elecflash(target.loc,power = 2)
 
 	is_on_cooldown()
 		if (ticker.round_elapsed_ticks < next_shot_at)
@@ -161,7 +162,7 @@
 			var/obj/target_r = new/obj/railgun_trg_dummy(target)
 
 			playsound(user, "sound/weapons/railgun.ogg", 50, 1)
-			user.dir = get_dir(user, target)
+			user.set_dir(get_dir(user, target))
 
 			var/list/affected = DrawLine(user, target_r, /obj/line_obj/railgun ,'icons/obj/projectiles.dmi',"WholeRailG",1,1,"HalfStartRailG","HalfEndRailG",OBJ_LAYER,1)
 
@@ -202,7 +203,7 @@
 		if (next_shot_at > ticker.round_elapsed_ticks)
 			return
 		next_shot_at = ticker.round_elapsed_ticks + cooldown
-		arcFlashTurf(user, get_turf(target), 15000)
+		arcFlashTurf(user, get_turf(target), wattage)
 
 /datum/limb/gun
 	var/datum/projectile/proj = null
@@ -303,36 +304,12 @@
 		cooldown = 40
 		reload_time = 300
 
-	minigun
-		proj = new/datum/projectile/energybolt/reliquary_burst
+	spike
+		proj = new/datum/projectile/special/spreader/uniform_burst/spikes
 		shots = 1
 		current_shots = 1
-		cooldown = 4
-		reload_time = 4
-
-		attack_range(atom/target, var/mob/user, params)
-			if (reloaded_at > ticker.round_elapsed_ticks && !current_shots)
-				boutput(user, "<span class='alert'>The [holder.name] is [reloading_str]!</span>")
-				return
-			else if (current_shots <= 0)
-				current_shots = shots
-			if (next_shot_at > ticker.round_elapsed_ticks)
-				return
-			if (current_shots > 0)
-				current_shots--
-				var/pox = text2num(params["icon-x"]) - 16
-				var/poy = text2num(params["icon-y"]) - 16
-				var/spread_angle = 15
-				playsound(user.loc, "sound/misc/reliquary/Rel-vortex-firing.ogg", 70, 1)
-				flick("guardian_gunlift", user)
-				user.visible_message("<b class='alert'>[user] fires at [target] with the [holder.name]!</b>")
-				next_shot_at = ticker.round_elapsed_ticks + cooldown
-				SPAWN_DBG (3)
-					shoot_projectile_ST_pixel_spread(user, proj, target, pox, poy, spread_angle)
-				if (!current_shots)
-					reloaded_at = ticker.round_elapsed_ticks + reload_time
-			else
-				reloaded_at = ticker.round_elapsed_ticks + reload_time
+		cooldown = 1 SECOND
+		reload_time = 1 SECOND
 
 /datum/limb/mouth
 	var/sound_attack = "sound/weapons/werewolf_attack1.ogg"
@@ -367,7 +344,7 @@
 		if (!target.melee_attack_test(user))
 			return
 
-		if (prob(src.miss_prob) || target.getStatusDuration("stunned") || target.getStatusDuration("weakened") || target.getStatusDuration("paralysis") || target.stat || target.restrained())
+		if (prob(src.miss_prob) || is_incapacitated(target)|| target.restrained())
 			var/obj/item/affecting = target.get_affecting(user)
 			var/datum/attackResults/msgs = user.calculate_melee_attack(target, affecting, dam_low, dam_high, 0, stam_damage_mult, !isghostcritter(user))
 			user.attack_effects(target, affecting)
@@ -398,7 +375,7 @@
 
 /datum/limb/item
 	attack_hand(atom/target, var/mob/user, var/reach, params, location, control)
-		if (holder && holder.remove_object && istype(holder.remove_object))
+		if (holder?.remove_object && istype(holder.remove_object))
 			target.attackby(holder.remove_object, user, params, location, control)
 			if (target)
 				holder.remove_object.afterattack(target, src, reach)
@@ -437,18 +414,18 @@
 		user.lastattacked = target
 
 	disarm(mob/target, var/mob/living/user)
-		logTheThing("combat", user, target, "mauls %target% with bear limbs (disarm intent) at [log_loc(user)].")
+		logTheThing("combat", user, target, "mauls [constructTarget(target,"combat")] with bear limbs (disarm intent) at [log_loc(user)].")
 		user.visible_message("<span class='alert'>[user] mauls [target] while trying to disarm them!</span>")
 		harm(target, user, 1)
 
 	grab(mob/target, var/mob/living/user)
-		logTheThing("combat", user, target, "mauls %target% with bear limbs (grab intent) at [log_loc(user)].")
+		logTheThing("combat", user, target, "mauls [constructTarget(target,"combat")] with bear limbs (grab intent) at [log_loc(user)].")
 		user.visible_message("<span class='alert'>[user] mauls [target] while trying to grab them!</span>")
 		harm(target, user, 1)
 
 	harm(mob/target, var/mob/living/user, var/no_logs = 0)
 		if (no_logs != 1)
-			logTheThing("combat", user, target, "mauls %target% with bear limbs at [log_loc(user)].")
+			logTheThing("combat", user, target, "mauls [constructTarget(target,"combat")] with bear limbs at [log_loc(user)].")
 		var/obj/item/affecting = target.get_affecting(user)
 		var/datum/attackResults/msgs = user.calculate_melee_attack(target, affecting, 6, 10, 0)
 		user.attack_effects(target, affecting)
@@ -460,6 +437,139 @@
 		if (prob(60))
 			target.changeStatus("weakened", 2 SECONDS)
 		user.lastattacked = target
+
+/datum/limb/bear/zombie
+
+	attack_hand(atom/target, var/mob/living/user, var/reach, params, location, control) //TODO: Make this actually do damage to things instead of just smashing the thing.
+		if (!holder)
+			return
+
+		if (!istype(user))
+			target.attack_hand(user, params, location, control)
+			return
+
+		if (ismob(target))
+			var/mob/M = target
+			//total hack. from attack_hand in mob/living/silicon/robot
+			if (istype(M, /mob/living/silicon/robot))
+				if(user.a_intent == INTENT_HARM)
+					M.TakeDamage("All", rand(3,6), 0)
+					if (prob(10))
+						var/turf/T = get_edge_target_turf(user, user.dir)
+						if (isturf(T))
+							M.visible_message("<span class='alert'><B>[user] savagely punches [M], sending them flying!</B></span>")
+							M.throw_at(T, 6, 2)
+					else
+						M.visible_message("<span class='alert'><B>[user] punches [M]!</B></span>")
+					return
+			..()
+			return
+
+		if (isobj(target)) //I am just going to do this like this, this is not good but I do not care.
+			if(istype(target, /obj/machinery/door))
+				var/obj/machinery/door/O = target
+				user.lastattacked = O
+				O.visible_message("<span class='alert'><b>[user]</b> violently smashes against the [O]!</span>")
+				attack_particle(user, O)
+				playsound(user.loc, O.hitsound, 50, 1, pitch = 1.6)
+				O.take_damage(20, user) //Like 30ish hits to break a normal airlock?
+
+			else if(istype(target, /obj/grille))
+				var/obj/grille/O = target
+				user.lastattacked = O
+				if (!O.shock(user, 70))
+					O.visible_message("<span class='alert'><b>[user]</b> violently slashes [O]!</span>")
+					playsound(O.loc, "sound/impact_sounds/Metal_Hit_Light_1.ogg", 80, 1)
+					O.damage_slashing(10)
+
+			else if(istype(target, /obj/window))
+				var/obj/window/O = target
+				user.lastattacked = O
+				O.visible_message("<span class='alert'>[user] smashes into the window.</span>", "<span class='notice'>You mash yourself against the window.</span>")
+				O.damage_blunt(15)
+				playsound(user.loc, O.hitsound, 50, 1, pitch = 1.6)
+
+			else if(istype(target, /obj/table))
+				var/obj/table/O = target
+				user.lastattacked = O
+				O.visible_message("<span class='alert'><b>[user]</b> violently rips apart the [O]!</span>")
+				playsound(O.loc, "sound/impact_sounds/Generic_Hit_Heavy_1.ogg", 40, 1)
+				O.deconstruct()
+
+			else if(istype(target, /obj/structure/woodwall))
+				var/obj/window/O = target
+				user.lastattacked = O
+				O.attack_hand(user)
+
+			else if(istype(target, /obj/machinery/bot))
+				var/obj/machinery/bot/O = target
+				user.lastattacked = O
+				O.explode()
+				O.visible_message("<span class='alert'><b>[user]</b> violently rips [O] apart!</span>")
+
+			if(prob(40) && !ON_COOLDOWN(user, "zombie arm scream", 1 SECOND))
+				user.emote("scream")
+			return
+
+		if (isitem(target))
+			boutput(user, "<span class='alert'>You try to pick [target] up but it wiggles out of your hand. Opposable thumbs would be nice.</span>")
+			return
+		else if (istype(target, /obj/machinery))
+			boutput(user, "<span class='alert'>You're unlikely to be able to use [target]. You manage to scratch its surface though.</span>")
+			return
+
+		..()
+		return
+
+	disarm(mob/target, var/mob/living/user)
+		logTheThing("combat", user, target, "mauls [constructTarget(target,"combat")] with zomb limbs (disarm intent) at [log_loc(user)].")
+		user.visible_message("<span class='alert'>[user] mauls [target] while trying to disarm them!</span>")
+		harm(target, user, 1)
+
+	grab(mob/target, var/mob/living/user)
+		if (!holder)
+			return
+
+		if (!istype(user) || !ismob(target))
+			target.attack_hand(user)
+			return
+
+		if(check_target_immunity( target ))
+			return 0
+
+		if (issilicon(target))
+			special_attack_silicon(target, user)
+			return
+
+		user.grab_other(target, 1) // Use standard grab proc.
+
+		// Werewolves and shamblers grab aggressively by default.
+		var/obj/item/grab/GD = user.equipped()
+		if (GD && istype(GD) && (GD.affecting && GD.affecting == target))
+			GD.state = GRAB_AGGRESSIVE
+			GD.update_icon()
+			user.visible_message("<span class='alert'>[user] grabs hold of [target] aggressively!</span>")
+
+		return
+
+	harm(mob/target, var/mob/living/user, var/no_logs = 0)
+		if (no_logs != 1)
+			logTheThing("combat", user, target, "mauls [constructTarget(target,"combat")] with bear limbs at [log_loc(user)].")
+		var/obj/item/affecting = target.get_affecting(user)
+		var/datum/attackResults/msgs = user.calculate_melee_attack(target, affecting, 6, 10, 1)
+		user.attack_effects(target, affecting)
+		var/action = pick("maim", "maul", "mangle", "rip", "scratch", "mutilate")
+		msgs.base_attack_message = "<b><span class='alert'>[user] [action]s [target] with their [src.holder]!</span></b>"
+		msgs.played_sound = "sound/impact_sounds/Flesh_Stab_1.ogg"
+		msgs.damage_type = DAMAGE_BLUNT
+		msgs.flush(SUPPRESS_LOGS)
+		if (prob(40))
+			if (istype(target))
+				var/mob/living/L = target
+				L.do_disorient(25, disorient=3 SECONDS)
+
+		user.lastattacked = target
+
 
 /datum/limb/dualsaw
 
@@ -483,12 +593,12 @@
 		user.lastattacked = target
 
 	disarm(mob/target, var/mob/living/user)
-		logTheThing("combat", user, target, "slashes %target% with dual saw (disarm intent) at [log_loc(user)].")
+		logTheThing("combat", user, target, "slashes [constructTarget(target,"combat")] with dual saw (disarm intent) at [log_loc(user)].")
 		user.visible_message("<span class='alert'>[user] slashes [target] while trying to disarm them!</span>")
 		harm(target, user, 1)
 
 	grab(mob/target, var/mob/living/user)
-		logTheThing("combat", user, target, "slashes %target% with dual saw (grab intent) at [log_loc(user)].")
+		logTheThing("combat", user, target, "slashes [constructTarget(target,"combat")] with dual saw (grab intent) at [log_loc(user)].")
 		user.visible_message("<span class='alert'>[user] slashes [target] while trying to grab them!</span>")
 		harm(target, user, 1)
 
@@ -509,7 +619,7 @@
 			H.sever_limb(the_limb)
 
 		if (no_logs != 1)
-			logTheThing("combat", user, target, "slashes %target% with dual saw at [log_loc(user)].")
+			logTheThing("combat", user, target, "slashes [constructTarget(target,"combat")] with dual saw at [log_loc(user)].")
 		var/obj/item/affecting = target.get_affecting(user)
 		var/datum/attackResults/msgs = user.calculate_melee_attack(target, affecting, 6, 10, 0)
 		user.attack_effects(target, affecting)
@@ -559,7 +669,7 @@
 		if(check_target_immunity( target ))
 			return 0
 		if (prob(25))
-			logTheThing("combat", user, target, "accidentally harms %target% with wendigo limbs at [log_loc(user)].")
+			logTheThing("combat", user, target, "accidentally harms [constructTarget(target,"combat")] with wendigo limbs at [log_loc(user)].")
 			user.visible_message("<span class='alert'><b>[user] accidentally claws [target] while trying to [user.a_intent] them!</b></span>", "<span class='alert'><b>You accidentally claw [target] while trying to [user.a_intent] them!</b></span>")
 			harm(target, user, 1)
 			return 1
@@ -588,7 +698,7 @@
 			return 0
 		var/quality = src.holder.quality
 		if (no_logs != 1)
-			logTheThing("combat", user, target, "mauls %target% with wendigo limbs at [log_loc(user)].")
+			logTheThing("combat", user, target, "mauls [constructTarget(target,"combat")] with wendigo limbs at [log_loc(user)].")
 		var/obj/item/affecting = target.get_affecting(user)
 		var/datum/attackResults/msgs = user.calculate_melee_attack(target, affecting, 6, 9, rand(5,9) * quality)
 		user.attack_effects(target, affecting)
@@ -601,7 +711,7 @@
 			target.changeStatus("weakened", (4 * quality)*10)
 		user.lastattacked = target
 
-#if ASS_JAM
+// Currently used by the High Fever disease which is obtainable from the "Too Much" chem which only shows up in sickly pears, which are currently commented out. Go there to make use of this.
 /datum/limb/hot //because
 	attack_hand(atom/target, var/mob/living/user, var/reach, params, location, control)
 		if (!holder)
@@ -634,7 +744,7 @@
 		if(check_target_immunity( target ))
 			return 0
 		if (prob(15))
-			logTheThing("combat", user, target, "accidentally harms %target% with hot hands at [log_loc(user)].")
+			logTheThing("combat", user, target, "accidentally harms [constructTarget(target,"combat")] with hot hands at [log_loc(user)].")
 			user.visible_message("<span class='alert'><b>[user] accidentally melts [target] while trying to [user.a_intent] them!</b></span>", "<span class='alert'><b>You accidentally melt [target] while trying to [user.a_intent] them!</b></span>")
 			harm(target, user, 1)
 			return 1
@@ -662,7 +772,7 @@
 		if(check_target_immunity( target ))
 			return 0
 		if (no_logs != 1)
-			logTheThing("combat", user, target, "melts %target% with hot hands at [log_loc(user)].")
+			logTheThing("combat", user, target, "melts [constructTarget(target,"combat")] with hot hands at [log_loc(user)].")
 		var/obj/item/affecting = target.get_affecting(user)
 		var/datum/attackResults/msgs = user.calculate_melee_attack(target, affecting, 1, 3, 1, 0, 0)
 		user.attack_effects(target, affecting)
@@ -674,7 +784,6 @@
 		user.lastattacked = target
 
 
-#endif
 // A replacement for the awful custom_attack() overrides in mutantraces.dm, which consisted of two
 // entire copies of pre-stamina melee attack code (Convair880).
 /datum/limb/abomination
@@ -702,11 +811,11 @@
 			var/obj/critter/victim = target
 
 			if (src.weak == 1)
-				SPAWN_DBG (0)
+				SPAWN_DBG(0)
 					step_away(victim, user, 15)
 
 				playsound(user.loc, pick('sound/voice/animal/werewolf_attack1.ogg', 'sound/voice/animal/werewolf_attack2.ogg', 'sound/voice/animal/werewolf_attack3.ogg'), 50, 1)
-				SPAWN_DBG (1)
+				SPAWN_DBG(0.1 SECONDS)
 					if (user) playsound(user.loc, "sound/impact_sounds/Flesh_Tear_3.ogg", 40, 1, -1)
 
 				user.visible_message("<span class='alert'><B>[user] slashes viciously at [victim]!</B></span>")
@@ -718,8 +827,7 @@
 				if (prob(66) && T && isturf(T))
 					user.visible_message("<span class='alert'><B>[user] mauls [victim] viciously, sending them flying!</B></span>")
 					victim.health -= 6 * victim.brutevuln
-					SPAWN_DBG (0)
-						victim.throw_at(T, 10, 2)
+					victim.throw_at(T, 10, 2)
 				else
 					user.visible_message("<span class='alert'><B>[user] savagely slashes [victim]!</span>")
 					victim.health -= 4 * victim.brutevuln
@@ -732,15 +840,14 @@
 				if (prob(66) && T && isturf(T))
 					user.visible_message("<span class='alert'><B>[user] savagely punches [victim], sending them flying!</B></span>")
 					victim.health -= 6 * victim.brutevuln
-					SPAWN_DBG (0)
-						victim.throw_at(T, 10, 2)
+					victim.throw_at(T, 10, 2)
 				else
 					user.visible_message("<span class='alert'><B>[user] punches [victim]!</span>")
 					victim.health -= 4 * victim.brutevuln
 
 				playsound(user.loc, "punch", 25, 1, -1)
 
-			if (victim && victim.alive && victim.health <= 0)
+			if (victim?.alive && victim.health <= 0)
 				victim.CritterDeath()
 			return
 
@@ -886,7 +993,7 @@
 				msgs.base_attack_message = "<span class='alert'><B>[user] shoves [target] with a [pick("powerful", "fearsome", "intimidating", "strong")] tendril[send_flying == 0 ? "" : ", forcing them to the ground"]!</B></span>"
 				msgs.damage = rand(1,2)
 
-		logTheThing("combat", user, target, "diarms %target% with [src.weak == 1 ? "werewolf" : "abomination"] arms at [log_loc(user)].")
+		logTheThing("combat", user, target, "diarms [constructTarget(target,"combat")] with [src.weak == 1 ? "werewolf" : "abomination"] arms at [log_loc(user)].")
 
 		if (send_flying == 2)
 			msgs.after_effects += /proc/wrestler_backfist
@@ -983,7 +1090,7 @@
 			else
 				msgs.base_attack_message = "<span class='alert'><B>[user] punches [target] with a [pick("powerful", "fearsome", "intimidating", "strong")] tendril[send_flying == 0 ? "" : ", forcing them to the ground"]!</B></span>"
 
-			msgs.played_sound = 'sound/impact_sounds/Generic_Punch_2.ogg'
+			msgs.played_sound = pick(sounds_punch)
 			msgs.damage = rand(6, 13)
 			msgs.damage_type = DAMAGE_BLUNT
 
@@ -992,7 +1099,7 @@
 		else if (send_flying == 1)
 			msgs.after_effects += /proc/wrestler_knockdown
 
-		logTheThing("combat", user, target, "punches %target% with [src.weak == 1 ? "werewolf" : "abomination"] arms at [log_loc(user)].")
+		logTheThing("combat", user, target, "punches [constructTarget(target,"combat")] with [src.weak == 1 ? "werewolf" : "abomination"] arms at [log_loc(user)].")
 		user.attack_effects(target, affecting)
 		msgs.flush(SUPPRESS_LOGS)
 
@@ -1076,7 +1183,7 @@
 		if(check_target_immunity( target ))
 			return 0
 		if (prob(25))
-			logTheThing("combat", user, target, "accidentally harms %target% with claw arms at [log_loc(user)].")
+			logTheThing("combat", user, target, "accidentally harms [constructTarget(target,"combat")] with claw arms at [log_loc(user)].")
 			user.visible_message("<span class='alert'><b>[user] accidentally claws [target] while trying to [user.a_intent] them!</b></span>", "<span class='alert'><b>You accidentally claw [target] while trying to [user.a_intent] them!</b></span>")
 			harm(target, user, 1)
 			return 1
@@ -1105,7 +1212,7 @@
 			return 0
 		var/quality = src.holder.quality
 		if (no_logs != 1)
-			logTheThing("combat", user, target, "claws %target% with claw arms at [log_loc(user)].")
+			logTheThing("combat", user, target, "claws [constructTarget(target,"combat")] with claw arms at [log_loc(user)].")
 		var/obj/item/affecting = target.get_affecting(user)
 		var/datum/attackResults/msgs = user.calculate_melee_attack(target, affecting, 2, 7, rand(1,3) * quality)
 		user.attack_effects(target, affecting)
@@ -1128,7 +1235,14 @@
 			return
 
 		if (isobj(target))
+			user.lastattacked = target
 			user.smash_through(target, list("grille"))
+			var/obj/O = target
+			if (isitem(O) && !O.anchored)
+				playsound(user,'sound/impact_sounds/Generic_Hit_1.ogg', 50, 1, pitch = 1.7)
+				var/turf/throw_to = get_edge_target_turf(user, get_dir(user,target))
+				O.throw_at(throw_to, 8, 2)
+
 		..()
 		return
 
@@ -1137,7 +1251,7 @@
 			return 0
 		var/quality = src.holder.quality
 		if (no_logs != 1)
-			logTheThing("combat", user, target, "kicks %target% at [log_loc(user)].")
+			logTheThing("combat", user, target, "kicks [constructTarget(target,"combat")] at [log_loc(user)].")
 		var/obj/item/affecting = target.get_affecting(user)
 		var/datum/attackResults/msgs = user.calculate_melee_attack(target, affecting, 1, 4, rand(1,3) * quality)
 		user.attack_effects(target, affecting)
@@ -1179,7 +1293,9 @@ var/list/ghostcritter_blocked = ghostcritter_blocked_objects()
 	/obj/machinery/nuclearbomb,\
 	/obj/item/gun/kinetic/airzooka,\
 	/obj/machinery/computer,\
-	/obj/machinery/power/smes) //Items that ghostcritters simply cannot interact, regardless of w_class
+	/obj/machinery/power/smes,
+	/obj/item/tinyhammer,
+	/obj/item/device/light/zippo) //Items that ghostcritters simply cannot interact, regardless of w_class
 	. = list()
 	for (var/blocked_type in blocked_types)
 		for (var/subtype in typesof(blocked_type))
@@ -1210,7 +1326,7 @@ var/list/ghostcritter_blocked = ghostcritter_blocked_objects()
 				var/can_pickup = 1
 
 				if (issmallanimal(usr))
-					var/mob/living/critter/small_animal/C = usr
+					var/mob/living/critter/small_animal/C = user
 					if (C.ghost_spawned && ghostcritter_blocked[O.type])
 						can_pickup = 0
 
@@ -1229,9 +1345,9 @@ var/list/ghostcritter_blocked = ghostcritter_blocked_objects()
 		return
 
 	help(mob/target, var/mob/living/user)
-		if (issmallanimal(usr) && iscarbon(target))
+		if (issmallanimal(user) && iscarbon(target))
 			user.lastattacked = target
-			var/mob/living/critter/small_animal/C = usr
+			var/mob/living/critter/small_animal/C = user
 			if (C.ghost_spawned)
 				if (max_wclass < 3)
 					user.visible_message("<span class='alert'><b>[user] tries to help [target], but they're worse than useless!</b></span>", "<span class='alert'><b>You try to help [target], but your spectral will can only manage a poke!</b></span>")
@@ -1249,7 +1365,7 @@ var/list/ghostcritter_blocked = ghostcritter_blocked_objects()
 			return 0
 		var/quality = src.holder.quality
 		if (no_logs != 1)
-			logTheThing("combat", user, target, "attacks %target% with a critter arm at [log_loc(user)].")
+			logTheThing("combat", user, target, "attacks [constructTarget(target,"combat")] with a critter arm at [log_loc(user)].")
 		var/obj/item/affecting = target.get_affecting(user)
 		var/datum/attackResults/msgs = user.calculate_melee_attack(target, affecting, dam_low, dam_high, rand(dam_low, dam_high) * quality, stam_damage_mult, !isghostcritter(user))
 		user.attack_effects(target, affecting)
@@ -1265,9 +1381,9 @@ var/list/ghostcritter_blocked = ghostcritter_blocked_objects()
 			attack_twitch(src)
 
 	grab(mob/target, var/mob/living/user)
-		if (issmallanimal(usr) && iscarbon(target))
+		if (issmallanimal(user))
 			user.lastattacked = target
-			var/mob/living/critter/small_animal/C = usr
+			var/mob/living/critter/small_animal/C = user
 			if (C.ghost_spawned)
 				if (max_wclass < 3)
 					user.visible_message("<span class='alert'><b>[user] tries to grab [target], but they are too large!</b></span>", "<span class='alert'><b>You try to grab [target], but your spectral will is not strong enough!</b></span>")
@@ -1277,7 +1393,7 @@ var/list/ghostcritter_blocked = ghostcritter_blocked_objects()
 	disarm(mob/target, var/mob/living/user)
 		if (issmallanimal(usr) && iscarbon(target))
 			user.lastattacked = target
-			var/mob/living/critter/small_animal/C = usr
+			var/mob/living/critter/small_animal/C = user
 			if (C.ghost_spawned)
 				if (max_wclass < 3)
 					user.visible_message("<span class='alert'><b>[user] tries to disarm [target], but can only manage a pathetic nudge!</b></span>", "<span class='alert'><b>You try to disarm [target], but your spectral will can only manage a pathetic nudge!</b></span>")
@@ -1300,6 +1416,47 @@ var/list/ghostcritter_blocked = ghostcritter_blocked_objects()
 	dam_low = 0
 	dam_high = 0
 
+/datum/limb/small_critter/med/dash
+	New(var/obj/item/parts/holder)
+		..()
+		src.setDisarmSpecial (/datum/item_special/katana_dash/limb)
+		src.setHarmSpecial (/datum/item_special/katana_dash/limb)
+
+
+	attack_hand(atom/target, var/mob/living/user, var/reach, params, location, control)
+		if (!holder)
+			return
+		if(check_target_immunity( target ))
+			return
+		//var/quality = src.holder.quality
+
+		if (!istype(user))
+			target.attack_hand(user, params, location, control)
+			return
+		..()
+
+	harm(mob/target, var/mob/living/user, var/no_logs = 0)
+		if(check_target_immunity( target ))
+			return 0
+		if (istype(target,/mob/living/critter/small_animal/trilobite/ai_controlled))
+			return 0
+		var/quality = src.holder.quality
+		if (no_logs != 1)
+			logTheThing("combat", user, target, "slashes [constructTarget(target,"combat")] with dash arms at [log_loc(user)].")
+		//	var/mob/living/L = target
+		//	L.do_disorient(24, 1 SECOND, 0, 0, 0.5 SECONDS)
+
+		var/obj/item/affecting = target.get_affecting(user)
+		var/datum/attackResults/msgs = user.calculate_melee_attack(target, affecting, 1, 5, rand(0,2) * quality)
+		user.attack_effects(target, affecting)
+		var/action = pick("cut", "rip", "claw", "slashe")
+		msgs.base_attack_message = "<b><span class='alert'>[user] [action]s [target]!</span></b>"
+		msgs.played_sound = "sound/impact_sounds/Flesh_Tear_3.ogg"
+		msgs.damage_type = DAMAGE_CUT
+		msgs.flush(SUPPRESS_LOGS)
+		user.lastattacked = target
+
+
 //test for crab attack thing
 /datum/limb/swipe_quake
 	New(var/obj/item/parts/holder)
@@ -1307,242 +1464,3 @@ var/list/ghostcritter_blocked = ghostcritter_blocked_objects()
 		src.setDisarmSpecial (/datum/item_special/slam/no_item_attack)
 		src.setHarmSpecial (/datum/item_special/swipe/limb)
 
-/datum/limb/reliquary_guardian_melee
-	attack_hand(atom/target, var/mob/living/user, var/reach, params, location, control)
-		if (!holder)
-			return
-
-		if(check_target_immunity( target ))
-			return 0
-
-		if (!istype(user))
-			target.attack_hand(user, params, location, control)
-			return
-
-		if (istype(target, /obj/critter))
-			user.lastattacked = target
-			var/obj/critter/victim = target
-			var/turf/T = get_edge_target_turf(user, user.dir)
-			if (prob(66) && T && isturf(T))
-				user.visible_message("<span class='alert'><B>[user] savagely punches [victim], sending them flying!</B></span>")
-				victim.health -= 6 * victim.brutevuln
-				SPAWN_DBG (0)
-				victim.throw_at(T, 10, 2)
-			else
-				user.visible_message("<span class='alert'><B>[user] punches [victim]!</span>")
-				victim.health -= 4 * victim.brutevuln
-
-				playsound(user.loc, "punch", 25, 1, -1)
-
-			if (victim && victim.alive && victim.health <= 0)
-				victim.CritterDeath()
-			return
-
-		if (isobj(target))
-			switch (user.smash_through(target, list("window", "grille", "door")))
-				if (0)
-					target.attack_hand(user, params, location, control)
-					return
-				if (1)
-					user.lastattacked = target
-					return
-
-		if (ismob(target))
-			user.lastattacked = target
-			if (issilicon(target))
-				special_attack_silicon(target, user)
-				return
-			else
-				..()
-				return
-
-		..()
-		return
-
-	grab(mob/target, var/mob/living/user)
-		if (!holder)
-			return
-
-		if (!istype(user) || !ismob(target))
-			target.attack_hand(user)
-			return
-
-		if(check_target_immunity( target ))
-			return 0
-
-		if (issilicon(target))
-			special_attack_silicon(target, user)
-			return
-
-		user.grab_other(target, 1) // Use standard grab proc.
-
-		// Werewolves and shamblers grab aggressively by default.
-		var/obj/item/grab/GD = user.equipped()
-		if (GD && istype(GD) && (GD.affecting && GD.affecting == target))
-			target.changeStatus("stunned", 2 SECONDS)
-			GD.state = GRAB_AGGRESSIVE
-			GD.update_icon()
-			user.visible_message("<span class='alert'>[user] grabs hold of [target] aggressively!</span>")
-
-		return
-
-	disarm(mob/target, var/mob/living/user)
-		if (!holder)
-			return
-
-		if (!istype(user) || !ismob(target))
-			target.attack_hand(user)
-			return
-
-		if(check_target_immunity( target ))
-			return 0
-
-		if (target.melee_attack_test(user, null, null, 1) != 1) // Target.lying check is in there.
-			return
-
-		if (issilicon(target))
-			special_attack_silicon(target, user)
-			return
-
-		var/send_flying = 2 // 1: a little bit | 2: across the room
-		var/obj/item/affecting = target.get_affecting(user)
-		var/datum/attackResults/disarm/msgs = user.calculate_disarm_attack(target, affecting)
-
-		if (!msgs || !istype(msgs))
-			return
-
-		user.lastattacked = target
-
-		if (prob(25) && ishuman(target))
-			var/mob/living/carbon/human/HH = target
-			var/limb_name = "unknown limb"
-
-			if (!HH || !ishuman(HH))
-				..() // Something went very wrong, fall back to default disarm proc.
-				return
-
-			if (HH.l_hand)
-				HH.sever_limb("l_arm")
-				limb_name = "left arm"
-			else if (HH.r_hand)
-				HH.sever_limb("r_arm")
-				limb_name = "right arm"
-			else
-				var/list/limbs = list("l_arm","r_arm","l_leg","r_leg")
-				var/the_limb = pick(limbs)
-				if (!HH.has_limb(the_limb))
-					return 0
-				HH.sever_limb(the_limb)
-				switch (the_limb)
-					if ("l_arm")
-						limb_name = "left arm"
-					if ("r_arm")
-						limb_name = "right arm"
-					if ("l_leg")
-						limb_name = "left leg"
-					if ("r_leg")
-						limb_name = "right leg"
-
-			if (prob(50) && !isdead(HH))
-				HH.emote("scream")
-
-				msgs.played_sound = 'sound/impact_sounds/Flesh_Stab_1.ogg'
-				msgs.base_attack_message = "<span class='alert'><B>[user] slams [HH] with the edge of their enormous claw, shearing off their [limb_name]!</span>"
-				msgs.damage_type = DAMAGE_CUT // We just lost a limb.
-
-				msgs.damage = rand(1,5)
-				HH.changeStatus("stunned", 2 SECONDS)
-
-			else
-				if (!target.anchored && prob(30))
-					send_flying = 1
-				else
-					target.drop_item() // Shamblers get a guaranteed disarm.
-
-				msgs.played_sound = 'sound/impact_sounds/Generic_Shove_1.ogg'
-				msgs.base_attack_message = "<span class='alert'><B>[user] shoves [target] with a [pick("powerful", "fearsome", "intimidating", "strong")] attack[send_flying == 0 ? "" : ", forcing them to the ground"]!</B></span>"
-				msgs.damage = rand(1,2)
-
-		logTheThing("combat", user, target, "disarms %target% with Reliquary Guardian Fist at [log_loc(user)].")
-
-		if (send_flying == 2)
-			msgs.after_effects += /proc/wrestler_backfist
-		else if (send_flying == 1)
-			msgs.after_effects += /proc/wrestler_knockdown
-
-		msgs.flush(SUPPRESS_LOGS)
-
-		user.lastattacked = target
-		return
-
-	harm(mob/target, var/mob/living/user)
-		if (!holder)
-			return
-
-		if (!istype(user) || !ismob(target))
-			target.attack_hand(user)
-			return
-		if(check_target_immunity( target ))
-			return 0
-		if (target.melee_attack_test(user) != 1)
-			return
-
-		if (issilicon(target))
-			special_attack_silicon(target, user)
-			return
-
-		var/send_flying = 2 // 1: a little bit | 2: across the room
-		var/obj/item/affecting = target.get_affecting(user)
-		var/datum/attackResults/msgs = user.calculate_melee_attack(target, affecting)
-
-		if (!msgs || !istype(msgs))
-			return
-
-		if (target.canmove && !target.anchored && !target.lying)
-			if (prob(50))
-				if (prob(60))
-					target.stuttering += 2
-					send_flying = 1
-				else
-					target.stuttering += 3
-					send_flying = 2
-			else
-				target.stuttering += 1
-				target.changeStatus("stunned", 2 SECONDS)
-		else
-			target.changeStatus("stunned", 2 SECONDS)
-			target.stuttering += 1
-
-
-		if (send_flying == 2)
-			msgs.base_attack_message = "<span class='alert'><B>[user] delivers a supernatural punch, sending [target] flying!</b></span>"
-		else
-			if (prob(25))
-				msgs.base_attack_message = "<span class='alert'><B>[user] mauls [target] viciously[send_flying == 0 ? "" : ", forcing them to the ground"]!</B></span>"
-			else
-				msgs.base_attack_message = "<span class='alert'><B>[user] slashes viciously at [target][send_flying == 0 ? "" : ", forcing them to the ground"]!</B></span>"
-				target.add_fingerprint(user)
-
-		if (prob(33) && !isdead(target) && !issilicon(target))
-			target.emote("scream")
-
-		if (send_flying == 2)
-			msgs.base_attack_message = "<span class='alert'><B>[user] punches [target] with their[pick("enormous", "giant", "gargantuan", "strong")] steel fist[send_flying == 0 ? "" : ", forcing them to the ground"]!</B></span>"
-		else
-			msgs.base_attack_message = "<span class='alert'><B>[user] punches [target] with their[pick("enormous", "giant", "gargantuan", "strong")] steel fist[send_flying == 0 ? "" : ", forcing them to the ground"]!</B></span>"
-
-			msgs.played_sound = 'sound/impact_sounds/Generic_Punch_2.ogg'
-			msgs.damage = rand(6, 13)
-			msgs.damage_type = DAMAGE_BLUNT
-
-		if (send_flying == 2)
-			msgs.after_effects += /proc/wrestler_backfist
-		else if (send_flying == 1)
-			msgs.after_effects += /proc/wrestler_knockdown
-
-		logTheThing("combat", user, target, "punches %target% with Reliquary Guardian Fist at [log_loc(user)].")
-		user.attack_effects(target, affecting)
-		msgs.flush(SUPPRESS_LOGS)
-
-		user.lastattacked = target
-		return

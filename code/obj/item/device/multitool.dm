@@ -10,8 +10,13 @@
 	desc = "You can use this on airlocks or APCs to try to hack them without cutting wires."
 	m_amt = 50
 	g_amt = 20
-	mats = 6
+	mats = list("CRY-1", "CON-2")
 	module_research = list("tools" = 5, "devices" = 2)
+
+
+	New()
+		..()
+		src.setItemSpecial(/datum/item_special/elecflash)
 
 //I don't actually know what I'm doing but hopefully this will cause severe deadly burns. Also electrical puns.
 /obj/item/device/multitool/custom_suicide = 1

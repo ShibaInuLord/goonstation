@@ -75,6 +75,11 @@
 	id = "vampire_enthrall"
 	icon = 'icons/ui/actions.dmi'
 	icon_state = "enthrall"
+	bar_icon_state = "bar-vampire"
+	border_icon_state = "border-vampire"
+	color_active = "#3c6dc3"
+	color_success = "#3fb54f"
+	color_failure = "#8d1422"
 	var/mob/living/carbon/human/target
 	var/datum/targetable/vampire/enthrall/enslave
 
@@ -250,7 +255,7 @@
 		target.vamp_beingbitten = 0
 
 		boutput(M, __blue("[target] has been enslaved and is now your thrall."))
-		logTheThing("combat", M, target, "enthralled %target%, making them a loyal mindslave at [log_loc(M)].")
+		logTheThing("combat", M, target, "enthralled [constructTarget(target,"combat")], making them a loyal mindslave at [log_loc(M)].")
 
 	onInterrupt()
 		..()

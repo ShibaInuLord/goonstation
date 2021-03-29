@@ -50,10 +50,10 @@
 		if (istype(H) && src.pointCost)
 			H.blood_tracking_output(src.pointCost)
 
-		if (ishuman(target))
+		if (isliving(target))
 			target:was_harmed(M, special = "vamp")
 
-		logTheThing("combat", M, target, "uses hypnotise on [target ? "%target%" : "*UNKNOWN*"] at [log_loc(M)].") // Target might have been gibbed, who knows.
+		logTheThing("combat", M, target, "uses hypnotise on [target ? "[constructTarget(target,"combat")]" : "*UNKNOWN*"] at [log_loc(M)].") // Target might have been gibbed, who knows.
 		return 1
 
 
@@ -63,6 +63,11 @@
 	id = "vamp_hypno"
 	icon = 'icons/ui/actions.dmi'
 	icon_state = "hypno"
+	bar_icon_state = "bar-vampire"
+	border_icon_state = "border-vampire"
+	color_active = "#b320c3"
+	color_success = "#3fb54f"
+	color_failure = "#8d1422"
 	var/mob/living/carbon/human/M
 	var/mob/living/carbon/human/target
 	var/datum/targetable/vampire/hypnotize/hypno
@@ -91,6 +96,7 @@
 		..()
 		if (target.bioHolder && target.traitHolder.hasTrait("training_chaplain"))
 			boutput(target, __blue("Your faith protects you from [M]'s dark designs!"))
+			JOB_XP(target, "Chaplain", 2)
 			target.visible_message("<span class='alert'><b>[target] just stares right back at [M]!</b></span>")
 
 		else if (target.sight_check(1)) // Can't stare through a blindfold very well, no?

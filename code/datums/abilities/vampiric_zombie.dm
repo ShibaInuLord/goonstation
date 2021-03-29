@@ -1,8 +1,7 @@
 // Converted everything related to vampires from client procs to ability holders and used
 // the opportunity to do some clean-up as well (Convair880).
 
-/////////////////////////////////////////////////// Setup //////////////////////////////////////////
-
+/* 	/		/		/		/		/		/		Setup		/		/		/		/		/		/		/		/		*/
 /mob/proc/make_vampiric_zombie()
 	if (ishuman(src))
 		var/datum/abilityHolder/vampiric_zombie/A = src.get_ability_holder(/datum/abilityHolder/vampiric_zombie)
@@ -23,9 +22,9 @@
 	else return
 
 
-////////////////////////////////////////////////// Ability holder /////////////////////////////////////////////
+/* 	/		/		/		/		/		/		Ability Holder	/		/		/		/		/		/		/		/		*/
 
-/obj/screen/ability/topBar/vampiric_zombie
+/atom/movable/screen/ability/topBar/vampiric_zombie
 	clicked(params)
 		var/datum/targetable/vampiric_zombie/spell = owner
 		var/datum/abilityHolder/holder = owner.holder
@@ -72,14 +71,29 @@
 	var/mob/vamp_isbiting = null
 	var/datum/abilityHolder/vampire/master = 0
 
-	onAbilityStat() // In the 'Vampire' tab.
-		..()
+	var/last_blood_points = 0
+
+	onLife(var/mult = 1) //failsafe for UI not doing its update correctly elsewhere
+		.= 0
 		if (ishuman(owner))
 			var/mob/living/carbon/human/H = owner
 			if (istype(H.mutantrace, /datum/mutantrace/vamp_zombie))
 				var/datum/mutantrace/vamp_zombie/V = H.mutantrace
-				stat("Blood Points:", V.blood_points)
-				stat("Max Health (based on blood):", H.max_health)
+
+				if (last_blood_points != V.blood_points)
+					last_blood_points = V.blood_points
+					src.updateText(0, src.x_occupied, src.y_occupied)
+
+
+	onAbilityStat() // In the 'Vampire' tab.
+		..()
+		.= list()
+		if (ishuman(owner))
+			var/mob/living/carbon/human/H = owner
+			if (istype(H.mutantrace, /datum/mutantrace/vamp_zombie))
+				var/datum/mutantrace/vamp_zombie/V = H.mutantrace
+				.["Blood:"] = V.blood_points
+				.["Max HP:"] = H.max_health
 
 	proc/msg_to_master(var/msg)
 		if (master)
@@ -98,7 +112,7 @@
 	var/unlock_message = null
 
 	New()
-		var/obj/screen/ability/topBar/vampiric_zombie/B = new /obj/screen/ability/topBar/vampiric_zombie(null)
+		var/atom/movable/screen/ability/topBar/vampiric_zombie/B = new /atom/movable/screen/ability/topBar/vampiric_zombie(null)
 		B.icon = src.icon
 		B.icon_state = src.icon_state
 		B.owner = src
@@ -116,7 +130,7 @@
 	updateObject()
 		..()
 		if (!src.object)
-			src.object = new /obj/screen/ability/topBar/vampiric_zombie()
+			src.object = new /atom/movable/screen/ability/topBar/vampiric_zombie()
 			object.icon = src.icon
 			object.owner = src
 		if (src.last_cast > world.time)

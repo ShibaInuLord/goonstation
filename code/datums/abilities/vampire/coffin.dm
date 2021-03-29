@@ -73,7 +73,7 @@
 		V.coffin_turf = target
 		boutput(M, __blue("You plant your coffin on [target]."))
 
-		logTheThing("combat", M, target, "marks coffin on tile on %target% at [log_loc(M)].")
+		logTheThing("combat", M, target, "marks coffin on tile on [constructTarget(target,"combat")] at [log_loc(M)].")
 		return 0
 
 /datum/targetable/vampire/coffin_escape
@@ -112,7 +112,7 @@
 		var/obj/storage/closet/coffin/vampire/coffin = new(spawnturf)
 		animate_buff_in(coffin)
 
-		V.traveling_to_coffin = coffin
+		V.the_coffin = coffin
 
 		var/obj/projectile/proj = initialize_projectile_ST(M, new/datum/projectile/special/homing/travel, spawnturf)
 		var/tries = 5

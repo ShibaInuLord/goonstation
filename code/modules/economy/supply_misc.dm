@@ -27,7 +27,13 @@
 
 	Entered(var/atom/movable/AM)
 		..()
-		if (istype(AM, /obj/storage/crate/biohazard/cdc))
+		var/datum/artifact/art = null
+		if(isobj(AM))
+			var/obj/O = AM
+			art = O.artifact
+		if(art)
+			shippingmarket.sell_artifact(AM, art)
+		else if (istype(AM, /obj/storage/crate/biohazard/cdc))
 			QM_CDC.receive_pathogen_samples(AM)
 		else if (istype(AM, /obj/storage/crate))
 			if (AM.delivery_destination)
@@ -46,6 +52,7 @@
 	anchored = 1
 	layer = EFFECTS_LAYER_UNDER_1
 	event_handler_flags = USE_FLUID_ENTER | USE_CANPASS
+	deconstruct_flags = DECON_SCREWDRIVER | DECON_WIRECUTTERS
 
 /obj/plasticflaps/CanPass(atom/A, turf/T)
 	if (isliving(A)) // You Shall Not Pass!

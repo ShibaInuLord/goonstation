@@ -16,7 +16,7 @@
 
 	New()
 		..()
-		BLOCK_LARGE
+		BLOCK_SETUP(BLOCK_LARGE)
 		AddComponent(/datum/component/itemblock/backpackblock)
 
 /obj/item/storage/backpack/withO2
@@ -34,6 +34,22 @@
 	icon_state = "Syndiebackpack"
 	spawn_contents = list(/obj/item/storage/box/starter/withO2)
 
+/obj/item/storage/backpack/captain
+	name = "Captain's Backpack"
+	desc = "A fancy designer bag made out of space snake leather and encrusted with plastic expertly made to look like gold."
+	icon_state = "capbackpack"
+	item_state = "capbackpack"
+
+	blue
+		desc = "A fancy designer bag made out of rare blue space snake leather and encrusted with plastic expertly made to look like gold."
+		icon_state = "capbackpack_blue"
+		item_state = "capbackpack_blue"
+
+	red
+		desc = "A fancy designer bag made out of rare red space snake leather and encrusted with plastic expertly made to look like gold."
+		icon_state = "capbackpack_red"
+		item_state = "capbackpack_red"
+
 /obj/item/storage/backpack/syndie/tactical
 	name = "tactical assault rucksack"
 	desc = "A military backpack made of high density fabric, designed to fit a wide array of tools for comprehensive storage support."
@@ -47,6 +63,7 @@
 	item_state = "bp-medic"
 	spawn_contents = list(/obj/item/storage/box/starter/withO2)
 
+
 /obj/item/storage/backpack/satchel
 	name = "satchel"
 	desc = "A thick, wearable container made of synthetic fibers, able to carry a number of objects comfortably on a crewmember's shoulder."
@@ -58,9 +75,23 @@
 	icon_state = "Syndiesatchel"
 	spawn_contents = list(/obj/item/storage/box/starter/withO2)
 
+/obj/item/storage/backpack/satchel/captain
+	name = "Captain's Satchel"
+	desc = "A fancy designer bag made out of space snake leather and encrusted with plastic expertly made to look like gold."
+	icon_state = "capsatchel"
+
+	blue
+		desc = "A fancy designer bag made out of rare blue space snake leather and encrusted with plastic expertly made to look like gold."
+		icon_state = "capsatchel_blue"
+
+	red
+		desc = "A fancy designer bag made out of rare red space snake leather and encrusted with plastic expertly made to look like gold."
+		icon_state = "capsatchel_red"
+
 /obj/item/storage/backpack/satchel/medic
 	name = "medic's satchel"
 	icon_state = "satchel_medic"
+
 
 /obj/item/storage/backpack/satchel/randoseru
 	name = "randoseru"
@@ -73,6 +104,7 @@
 	item_state = "bp_fjallraven_red"
 
 	New()
+		..()
 		if (prob(50))
 			icon_state = "bp_fjallraven_yellow"
 			item_state = "bp_fjallraven_yellow"
@@ -102,7 +134,7 @@
 
 	New()
 		..()
-		BLOCK_ROPE
+		BLOCK_SETUP(BLOCK_ROPE)
 
 /obj/item/storage/fanny/funny
 	name = "funny pack"
@@ -136,10 +168,11 @@
 	stamina_damage = 10
 	stamina_cost = 5
 	stamina_crit_chance = 5
+	w_class = 4.0
 
 	New()
 		..()
-		BLOCK_ROPE
+		BLOCK_SETUP(BLOCK_ROPE)
 
 	proc/can_use()
 		.= 1
@@ -163,14 +196,14 @@
 			return
 		return ..()
 
-	attackby(obj/item/W as obj, mob/user as mob)
+	attackby(obj/item/W as obj, mob/user as mob, obj/item/storage/T)
 		if(!can_use())
 			boutput(user, "<span class='alert'>You need to wear [src] for that.</span>")
 			return
 		if (istype(W, /obj/item/storage/toolbox) || istype(W, /obj/item/storage/box) || istype(W, /obj/item/storage/belt))
 			var/obj/item/storage/S = W
 			for (var/obj/item/I in S.get_contents())
-				if (..(I, user, null, S) == 0)
+				if (..(I, user, S) == 0)
 					break
 			return
 		else
@@ -181,8 +214,10 @@
 	desc = "Can hold various small objects."
 	icon_state = "utilitybelt"
 	item_state = "utility"
+	can_hold = list(/obj/item/deconstructor)
+	in_list_or_max = 1
 
-/obj/item/storage/belt/utility/ceshielded
+/obj/item/storage/belt/utility/prepared/ceshielded
 	name = "aurora MKII utility belt"
 	desc = "An utility belt for usage in high-risk salvage operations. Contains a personal shield generator. Can be activated to overcharge the shields temporarily."
 	icon_state = "cebelt"
@@ -196,7 +231,8 @@
 	var/lastTick = 0
 	var/chargeTime = 50 //world.time Ticks per charge increase. 50 works out to be roughly 45 seconds from 0 -> 10 under normal conditions.
 	can_hold = list(/obj/item/rcd,
-	/obj/item/rcd_ammo)
+	/obj/item/rcd_ammo,
+	/obj/item/deconstructor)
 	in_list_or_max = 1
 
 	New()
@@ -211,8 +247,7 @@
 		return
 
 	proc/activate()
-		if (!(src in processing_items))
-			processing_items.Add(src)
+		processing_items |= src
 
 		if(charge > 0)
 			charge -= 1
@@ -250,6 +285,9 @@
 		delProperty("heatprot")
 
 		if(overlay)
+			if(ishuman(src.loc))
+				var/mob/living/carbon/human/H = src.loc
+				H.attached_objs.Remove(overlay)
 			qdel(overlay)
 			overlay = null
 
@@ -296,13 +334,17 @@
 		lastTooltipContent = .
 
 /obj/item/storage/belt/utility/prepared
-	spawn_contents = list(/obj/item/crowbar,
+	spawn_contents = list(/obj/item/crowbar/yellow,
 	/obj/item/weldingtool,
-	/obj/item/wirecutters,
-	/obj/item/screwdriver,
-	/obj/item/wrench,
+	/obj/item/wirecutters/yellow,
+	/obj/item/screwdriver/yellow,
+	/obj/item/wrench/yellow,
 	/obj/item/device/multitool,
-	/obj/item/cable_coil)
+	/obj/item/deconstructor)
+
+/obj/item/storage/belt/utility/superhero
+	name = "superhero utility belt"
+	spawn_contents = list(/obj/item/clothing/mask/breath,/obj/item/tank/emergency_oxygen)
 
 /obj/item/storage/belt/medical
 	name = "medical belt"
@@ -345,7 +387,10 @@
 	/obj/item/gun/energy/lawbringer/old,
 	/obj/item/gun/energy/wavegun,
 	/obj/item/gun/kinetic/revolver,
-	/obj/item/gun/kinetic/zipgun)
+	/obj/item/gun/kinetic/zipgun,
+	/obj/item/clothing/mask/gas/NTSO,
+	/obj/item/gun/energy/tasersmg,
+	/obj/item/gun/energy/signifer2) //added so the NTSO mask can be clipped to the belt, maybe good to do with all gas masks?
 	in_list_or_max = 1
 
 // kiki's detective shoulder (holster)
@@ -359,6 +404,34 @@
 		inspector
 			icon_state = "inspector_holster"
 			item_state = "inspector_holster"
+
+
+	standard
+		spawn_contents = list(/obj/item/gun/energy/taser_gun, /obj/item/baton, /obj/item/barrier)
+
+	offense
+		spawn_contents = list(/obj/item/gun/energy/wavegun, /obj/item/baton, /obj/item/barrier)
+
+	support
+		spawn_contents = list(/obj/item/baton, /obj/item/reagent_containers/food/snacks/donut/custom/robust = 2,  /obj/item/reagent_containers/emergency_injector/morphine = 4)
+
+	control
+		spawn_contents = list(/obj/item/gun/energy/tasershotgun, /obj/item/baton, /obj/item/barrier)
+		New()
+			..()
+			can_hold += /obj/item/gun/energy/tasershotgun
+
+	assistant
+		spawn_contents = list(/obj/item/barrier, /obj/item/device/detective_scanner, /obj/item/device/ticket_writer)
+
+	ntso
+		spawn_contents = list(/obj/item/gun/energy/signifer2, /obj/item/gun/kinetic/clock_188, /obj/item/baton/ntso, /obj/item/clothing/mask/gas/NTSO, /obj/item/storage/ntso_pouch) //secbelt subtype that only spawns on NTSO, not in vendor
+
+	baton
+		spawn_contents = list(/obj/item/baton, /obj/item/barrier)
+
+	tasersmg
+		spawn_contents = list(/obj/item/gun/energy/tasersmg, /obj/item/baton, /obj/item/barrier)
 
 //////////////////////////////
 // ~Nuke Ops Class Storage~ //
@@ -410,18 +483,17 @@
 // combat medic storage 7 slot
 
 /obj/item/storage/belt/syndicate_medic_belt
-	name = "medical lifesaver bag"
+	name = "injector bag"
 	icon = 'icons/obj/items/belts.dmi'
-	desc = "A canvas duffel bag full of medicines."
+	desc = "A canvas duffel bag full of medical autoinjectors."
 	icon_state = "medic_belt"
 	item_state = "medic_belt"
 	spawn_contents = list(/obj/item/reagent_containers/emergency_injector/high_capacity/epinephrine,
-	/obj/item/reagent_containers/emergency_injector/high_capacity/salbutamol,
-	/obj/item/reagent_containers/emergency_injector/high_capacity/salicylic_acid,
 	/obj/item/reagent_containers/emergency_injector/high_capacity/saline,
-	/obj/item/reagent_containers/emergency_injector/high_capacity/atropine,
-	/obj/item/reagent_containers/emergency_injector/high_capacity/pentetic,
-	/obj/item/reagent_containers/emergency_injector/high_capacity/mannitol)
+	/obj/item/reagent_containers/emergency_injector/high_capacity/salbutamol,
+	/obj/item/reagent_containers/emergency_injector/high_capacity/mannitol,
+	/obj/item/reagent_containers/emergency_injector/high_capacity/juggernaut,
+	/obj/item/reagent_containers/emergency_injector/high_capacity/donk_injector)
 
 /obj/item/storage/backpack/satchel/syndie/syndicate_medic_satchel
 	name = "medical shoulder pack"
@@ -429,11 +501,7 @@
 	icon_state = "Syndiesatchel"
 	item_state = "backpack"
 	spawn_contents = list(/obj/item/robodefibrillator,
-	/obj/item/extinguisher,
-	/obj/item/reagent_containers/iv_drip/blood,
-	/obj/item/reagent_containers/mender/brute,
-	/obj/item/reagent_containers/mender/burn,
-	/obj/item/reagent_containers/hypospray)
+	/obj/item/extinguisher)
 
 
 /* -------------------- Wrestling Belt -------------------- */

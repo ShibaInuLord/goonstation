@@ -5,19 +5,21 @@
 	icon_state = "satchel"
 	flags = ONBELT
 	w_class = 1
+	event_handler_flags = USE_FLUID_ENTER | NO_MOUSEDROP_QOL
 	var/maxitems = 50
 	var/list/allowed = list(/obj/item/)
 	var/itemstring = "items"
+	inventory_counter_enabled = 1
 
 
 	New()
-		src.satchel_updateicon()
 		..()
+		src.satchel_updateicon()
 
 	attackby(obj/item/W as obj, mob/user as mob)
 		var/proceed = 0
 		for(var/check_path in src.allowed)
-			if(istype(W, check_path))
+			if(istype(W, check_path) && W.w_class < 4)
 				proceed = 1
 				break
 		if (!proceed)
@@ -31,6 +33,7 @@
 			boutput(user, "<span class='notice'>You put [W] in [src].</span>")
 			if (src.contents.len == src.maxitems) boutput(user, "<span class='notice'>[src] is now full!</span>")
 			src.satchel_updateicon()
+			tooltip_rebuild = 1
 		else boutput(user, "<span class='alert'>[src] is full!</span>")
 
 	attack_self(var/mob/user as mob)
@@ -40,6 +43,7 @@
 				I.set_loc(T)
 			boutput(user, "<span class='notice'>You empty out [src].</span>")
 			src.satchel_updateicon()
+			tooltip_rebuild = 1
 		else ..()
 
 	attack_hand(mob/user as mob)
@@ -49,12 +53,12 @@
 		// This is probably easily fixable by just running the check again
 		// but to be honest this is one of those funny bugs that can be fixed later
 
-		if (get_dist(user, src) <= 0 && src.contents.len)
+		if (get_dist(user, src) <= 0 && length(src.contents))
 			if (user.l_hand == src || user.r_hand == src)
 				var/obj/item/getItem = null
 
 				if (src.contents.len > 1)
-					if (usr.a_intent == INTENT_GRAB)
+					if (user.a_intent == INTENT_GRAB)
 						getItem = src.search_through(user)
 
 					else
@@ -67,10 +71,11 @@
 					getItem = src.contents[1]
 
 				if (getItem)
-					user.visible_message("<span class='notice'><b>[usr]</b> takes \a [getItem.name] out of \the [src].</span>",\
+					user.visible_message("<span class='notice'><b>[user]</b> takes \a [getItem.name] out of \the [src].</span>",\
 					"<span class='notice'>You take \a [getItem.name] from [src].</span>")
 					user.put_in_hand_or_drop(getItem)
 					src.satchel_updateicon()
+			tooltip_rebuild = 1
 		return ..(user)
 
 	proc/search_through(mob/user as mob)
@@ -108,7 +113,8 @@
 	MouseDrop_T(atom/movable/O as obj, mob/user as mob)
 		var/proceed = 0
 		for(var/check_path in src.allowed)
-			if(istype(O, check_path))
+			var/obj/item/W = O
+			if(istype(O, check_path) && W.w_class < 4)
 				proceed = 1
 				break
 		if (!proceed)
@@ -134,9 +140,9 @@
 			boutput(user, "<span class='notice'>You finish filling \the [src].</span>")
 		else boutput(user, "<span class='alert'>\The [src] is already full!</span>")
 		src.satchel_updateicon()
+		tooltip_rebuild = 1
 
 	proc/satchel_updateicon()
-		tooltip_rebuild = 1
 		var/perc
 		if (src.contents.len > 0 && src.maxitems > 0)
 			perc = (src.contents.len / src.maxitems) * 100
@@ -158,6 +164,7 @@
 				src.overlays += image('icons/obj/items/items.dmi', "satcounter5")
 
 		signal_event("icon_updated")
+		src.inventory_counter?.update_number(src.contents.len)
 
 	get_desc()
 		return "It contains [src.contents.len]/[src.maxitems] [src.itemstring]."
@@ -170,7 +177,7 @@
 		icon_state = "hydrosatchel"
 		allowed = list(/obj/item/seed,
 		/obj/item/plant,
-		/obj/item/reagent_containers/food,
+		/obj/item/reagent_containers/food/snacks,
 		/obj/item/organ,
 		/obj/item/clothing/head/butt,
 		/obj/item/parts/human_parts/arm,
@@ -254,3 +261,5 @@
 			var/obj/item/toy/figure/F = new()
 			F.set_loc(src)
 			src.satchel_updateicon()
+		tooltip_rebuild = 1
+

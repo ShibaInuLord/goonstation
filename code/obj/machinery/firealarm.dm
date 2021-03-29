@@ -6,7 +6,7 @@
 	name = "Fire Alarm"
 	icon = 'icons/obj/monitors.dmi'
 	icon_state = "fire0"
-	plane = PLANE_NOSHADOW_BELOW
+	plane = PLANE_NOSHADOW_ABOVE
 	deconstruct_flags = DECON_WIRECUTTERS | DECON_MULTITOOL
 	machine_registry_idx = MACHINES_FIREALARMS
 	var/alarm_frequency = "1437"
@@ -27,6 +27,7 @@
 
 /obj/machinery/firealarm/New()
 	..()
+	START_TRACKING
 	if(!alarm_zone)
 		var/area/A = get_area(loc)
 		alarm_zone = A.name
@@ -34,13 +35,13 @@
 	if(!net_id)
 		net_id = generate_net_id(src)
 
-	mechanics = new(src)
-	mechanics.master = src
-	mechanics.addInput("toggle", "toggleinput")
-	SPAWN_DBG (10)
+	AddComponent(/datum/component/mechanics_holder)
+	SEND_SIGNAL(src,COMSIG_MECHCOMP_ADD_INPUT,"toggle", "toggleinput")
+	SPAWN_DBG(1 SECOND)
 		frequency = radio_controller.return_frequency(alarm_frequency)
 
 /obj/machinery/firealarm/disposing()
+		STOP_TRACKING
 		radio_controller.remove_object(src, alarm_frequency)
 		..()
 
@@ -126,7 +127,7 @@
 	var/area/A = get_area(loc)
 	if(!isarea(A))
 		return
-	if(mechanics) mechanics.fireOutgoing(mechanics.newSignal("alertReset"))
+	SEND_SIGNAL(src,COMSIG_MECHCOMP_TRANSMIT_SIGNAL,"alertReset")
 	A.firereset()	//Icon state is set to "fire0" in A.firereset()
 
 	if (src.ringlimiter)
@@ -151,7 +152,7 @@
 	A.firealert()	//Icon state is set to "fire1" in A.firealert()
 	post_alert(1)
 
-	if(mechanics) mechanics.fireOutgoing(mechanics.newSignal("alertTriggered"))
+	SEND_SIGNAL(src,COMSIG_MECHCOMP_TRANSMIT_SIGNAL,"alertTriggered")
 	if (!src.ringlimiter)
 		src.ringlimiter = 1
 		playsound(src.loc, "sound/machines/firealarm.ogg", 50, 1)
@@ -160,7 +161,6 @@
 
 	src.dont_spam = 1
 	SPAWN_DBG(5 SECONDS)
-	if(src)
 		src.dont_spam = 0
 
 	return
@@ -214,7 +214,7 @@
 		reply.transmission_method = TRANSMISSION_RADIO
 		reply.data["address_1"] = sender
 		reply.data["command"] = "ping_reply"
-		reply.data["device"] = "PNET_FIREALARM"
+		reply.data["device"] = "WNET_FIREALARM"
 		reply.data["netid"] = src.net_id
 		reply.data["alert"] = src.icon_state == "fire0" ? "reset" : "fire"
 		reply.data["zone"] = alarm_zone

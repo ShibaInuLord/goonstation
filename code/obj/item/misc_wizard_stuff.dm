@@ -3,7 +3,7 @@
 // - Staves
 // - Magic mirror
 
-/////////////////////////////////////////////////// Teleportation scroll ///////////////////////////////////
+// // // // // // // // // // Teleportation scroll // // // // // // // // // // // //
 
 /obj/item/teleportation_scroll
 	name = "Teleportation Scroll"
@@ -45,7 +45,7 @@
 	var/mob/living/carbon/human/H = usr
 	if (!( ishuman(H)))
 		return 1
-	if ((usr.contents.Find(src) || (in_range(src, usr) && istype(src.loc, /turf))))
+	if ((usr.contents.Find(src) || (in_interact_range(src, usr) && istype(src.loc, /turf))))
 		src.add_dialog(usr)
 		if (href_list["spell_teleport"])
 			if (src.uses >= 1 && usr.teleportscroll(0, 1, src) == 1)
@@ -75,10 +75,11 @@
 	flags = FPRINT | TABLEPASS | NOSHIELD
 	object_flags = NO_ARM_ATTACH
 	var/wizard_key = "" // The owner of this staff.
+	var/eldritch = 0	//was for robe and wizard hat, now nothing.
 
 	New()
 		..()
-		BLOCK_ALL
+		BLOCK_SETUP(BLOCK_ALL)
 
 	handle_other_remove(var/mob/source, var/mob/living/carbon/human/target)
 		. = ..()
@@ -109,9 +110,7 @@
 				affected_mob.take_brain_damage(6)
 
 			else
-				var/datum/effects/system/spark_spread/s = unpool(/datum/effects/system/spark_spread)
-				s.set_up(4, 1, affected_mob)
-				s.start()
+				elecflash(affected_mob)
 				affected_mob.visible_message("<span class='alert'>The curse upon [src] rebukes [affected_mob]!</span>")
 				boutput(affected_mob, "<span class='alert'>Horrible visions of depravity and terror flood your mind!</span>")
 				affected_mob.emote("scream")
@@ -128,9 +127,7 @@
 			return
 
 		src.visible_message("<span class='alert'><b>The [src.name] is suddenly warped away!</b></span>")
-		var/datum/effects/system/spark_spread/s = unpool(/datum/effects/system/spark_spread)
-		s.set_up(4, 1, get_turf(src))
-		s.start()
+		elecflash(src)
 
 		if (ismob(src.loc))
 			var/mob/HH = src.loc
@@ -167,6 +164,7 @@
 	item_state = "staffcthulhu"
 	force = 14
 	hitsound = 'sound/effects/ghost2.ogg'
+	eldritch = 1
 
 	New()
 		. = ..()
@@ -190,6 +188,12 @@
 
 	attack(mob/M as mob, mob/user as mob)
 		if (iswizard(user) && !iswizard(M) && !isdead(M) && !check_target_immunity(M))
+			if (M?.traitHolder?.hasTrait("training_chaplain"))
+				M.visible_message("<spab class='alert'>A divine light shields [M] from harm!</span>")
+				playsound(M, "sound/impact_sounds/Energy_Hit_1.ogg", 40, 1)
+				JOB_XP(M, "Chaplain", 2)
+				return
+
 			if (prob(20))
 				src.do_brainmelt(M, 1)
 			else if (prob(35))
@@ -231,7 +235,7 @@
 
 		// Teamwork, perhaps? The M.is_target check that used to be here doesn't cut it in the mixed game mode (Convair880).
 		for (var/datum/mind/M in ticker.minds)
-			if (M && M.special_role == "wizard" && M.current)
+			if (M?.special_role == "wizard" && M.current)
 				W_count++
 				T += "<hr>"
 				T += "<b>[M.current.real_name]'s objectives:</b>"

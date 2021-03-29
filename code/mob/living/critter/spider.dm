@@ -86,11 +86,11 @@
 		switch (act)
 			if ("scream","hiss")
 				if (src.emote_check(voluntary, 50))
-					playsound(get_turf(src), "sound/voice/animal/cat_hiss.ogg", 80, 1)
+					playsound(get_turf(src), "sound/voice/animal/cat_hiss.ogg", 80, 1, channel=VOLUME_CHANNEL_EMOTE)
 					return "<b>[src]</b> hisses!"
 			if ("smile","coo")
 				if (src.emote_check(voluntary, 50))
-					playsound(get_turf(src), "sound/voice/babynoise.ogg", 50, 1)
+					playsound(get_turf(src), "sound/voice/babynoise.ogg", 50, 1, channel=VOLUME_CHANNEL_EMOTE)
 					return "<b>[src]</b> coos!"
 		return null
 
@@ -174,6 +174,7 @@
 	density = 0
 	flags = TABLEPASS
 	fits_under_table = 1
+	can_grab = 0 // Causes issues with tablepass, and doesn't make too much sense
 	health_brute = 25
 	health_burn = 25
 	good_grip = 0
@@ -309,8 +310,8 @@
 		stepsound = "cluwnestep"
 		adultpath = /mob/living/critter/spider/clownqueen/cluwne
 		add_abilities = list(/datum/targetable/critter/clownspider_kick/cluwne,
-							/datum/targetable/critter/spider_bite,
-							/datum/targetable/critter/spider_drain)
+							/datum/targetable/critter/spider_bite/cluwne,
+							/datum/targetable/critter/spider_drain/cluwne)
 		item_shoes = /obj/item/clothing/shoes/cursedclown_shoes
 		item_mask = /obj/item/clothing/mask/cursedclown_hat
 
@@ -334,6 +335,9 @@
 						/datum/targetable/critter/spider_drain)
 	var/item_shoes = /obj/item/clothing/shoes/clown_shoes
 	var/item_mask = /obj/item/clothing/mask/clown_hat
+	var/list/babies = null
+	// var/egg_path = /obj/item/reagent_containers/food/snacks/ingredient/egg/critter/clown
+	var/max_defensive_babies = 100
 
 	cluwne
 		name = "queen cluwnespider"
@@ -342,11 +346,22 @@
 		icon_state_dead = "cluwnespider_queen"
 		stepsound = "cluwnestep"
 		add_abilities = list(/datum/targetable/critter/clownspider_trample/cluwne,
-							/datum/targetable/critter/vomitegg,
-							/datum/targetable/critter/spider_bite,
-							/datum/targetable/critter/spider_drain)
+							/datum/targetable/critter/vomitegg/cluwne,
+							/datum/targetable/critter/spider_bite/cluwne,
+							/datum/targetable/critter/spider_drain/cluwne)
 		item_shoes = /obj/item/clothing/shoes/cursedclown_shoes
 		item_mask = /obj/item/clothing/mask/cursedclown_hat
+		// egg_path = /obj/item/reagent_containers/food/snacks/ingredient/egg/critter/cluwne
+		max_defensive_babies = 150
+
+	New()
+		..()
+		babies = list()
+
+	disposing()
+		if (islist(babies))
+			babies.len = 0
+		..()
 
 	Life(datum/controller/process/mobs/parent)
 		if (..(parent))
@@ -367,25 +382,43 @@
 						I.throw_at(T, 12, 3)
 			src.gib(1)
 
+	was_harmed(var/atom/T as mob|obj, var/obj/item/weapon = 0, var/special = 0, var/intent = null)
+		..()
+
+		//clownbabies can't fight clownqueens. but they can fight Cluwnequeens and vice versa
+		if (istype(T, src.type))
+			return
+		var/defenders = 0		//this is the amount of babies that will defend you
+		var/count = 0
+		for (var/obj/critter/spider/clown/CS in babies)
+			count++
+			if (count > max_defensive_babies)
+				break
+			if (get_dist(src, CS) > 7)
+				continue
+			if (defenders >= 3)
+				return
+			if (prob(70))
+				continue
+			CS.target = T
+			CS.attack = 1
+			CS.task = "chasing"
+			defenders++
+
 /proc/funnygibs(atom/location, var/list/ejectables, var/bDNA, var/btype)
 	SPAWN_DBG(0)
 		playsound(location, "sound/musical_instruments/Bikehorn_1.ogg", 100, 1)
 		playsound(location, "sound/impact_sounds/Flesh_Break_2.ogg", 50, 1)
 	var/obj/decal/cleanable/blood/splatter/extra/blood = null
 
-	var/list/dirlist = list(list(NORTH, NORTHEAST, NORTHWEST),
-		list(SOUTH, SOUTHEAST, SOUTHWEST),
-		list(WEST, NORTHWEST, SOUTHWEST),
-		list(EAST, NORTHEAST, SOUTHEAST))
-
 	var/list/bloods = list()
 
-	for (var/i = 1, i <= 4, i++)
+	for (var/i in cardinal)
 		blood = make_cleanable(/obj/decal/cleanable/blood/splatter/extra, location)
 		blood.blood_DNA = bDNA
 		blood.blood_type = btype
 		blood.color = random_saturated_hex_color()
-		blood.streak(dirlist[i], 1)
+		blood.streak_cleanable(i, 1)
 		bloods += blood
 
 	var/extra = rand(2,4)
@@ -394,13 +427,13 @@
 		blood.blood_DNA = bDNA
 		blood.blood_type = btype
 		blood.color = random_saturated_hex_color()
-		blood.streak(alldirs, 1)
+		blood.streak_cleanable(cardinal, 1)
 		bloods += blood
 
 	var/turf/Q = get_turf(location)
 	if (!Q)
 		return
-	if (ejectables && ejectables.len)
+	if (length(ejectables))
 		for (var/atom/movable/I in ejectables)
 			var/turf/target = null
 			var/tries = 0

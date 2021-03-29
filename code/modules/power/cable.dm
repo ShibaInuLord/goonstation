@@ -11,9 +11,7 @@
 	if(powernets && powernets.len >= netnum)
 		PN = powernets[netnum]
 
-	var/datum/effects/system/spark_spread/s = unpool(/datum/effects/system/spark_spread)
-	s.set_up(3, 1, src)
-	s.start()
+	elecflash(src)
 
 	return user.shock(src, PN ? PN.avail : 0, user.hand == 1 ? "l_arm": "r_arm", 1, ignore_gloves ? 1 : 0)
 
@@ -73,7 +71,7 @@
 	//var/image/cableimg = null
 	//^ is unnecessary, i think
 	layer = CABLE_LAYER
-	plane = PLANE_DEFAULT
+	plane = PLANE_NOSHADOW_BELOW
 	color = "#DD0000"
 	text = ""
 
@@ -148,7 +146,7 @@
 	else
 		applyCableMaterials(src, getMaterial(insulator_default), getMaterial(condcutor_default))
 
-	allcables += src
+	START_TRACKING
 
 /obj/cable/disposing()		// called when a cable is deleted
 
@@ -158,7 +156,6 @@
 			var/datum/powernet/PN = powernets[netnum]
 			PN.cut_cable(src)									// updated the powernets
 	else
-		if(Debug) diary << "Defered cable deletion at [x],[y]: #[netnum]"
 		defer_powernet_rebuild = 2
 
 		if(netnum && powernets && powernets.len >= netnum) //NEED FOR CLEAN GC IN EXPLOSIONS
@@ -167,7 +164,7 @@
 	insulator.owner = null
 	conductor.owner = null
 
-	allcables -= src
+	STOP_TRACKING
 
 	..()													// then go ahead and delete the cable
 
@@ -235,9 +232,14 @@
 	else if (istype(W, /obj/item/device/t_scanner) || ispulsingtool(W) || (istype(W, /obj/item/device/pda2) && istype(W:module, /obj/item/device/pda_module/tray)))
 
 		var/datum/powernet/PN = get_powernet()		// find the powernet
+		var/powernet_id = ""
 
 		if(PN && (PN.avail > 0))		// is it powered?
-			boutput(user, "<span class='alert'>[PN.avail]W in power network.</span>")
+			if(ispulsingtool(W))
+				// 3 Octets: Netnum, 4 Octets: Nodes+Data Nodes*2, 4 Octets: Cable Count
+				powernet_id = " ID#[num2text(PN.number,3,8)]:[num2text(length(PN.nodes)+(length(PN.data_nodes)<<2),4,8)]:[num2text(length(PN.cables),4,8)]"
+
+			boutput(user, "<span class='alert'>[PN.avail]W in power network.[powernet_id]</span>")
 
 		else
 			boutput(user, "<span class='alert'>The cable is not powered.</span>")
@@ -326,8 +328,8 @@
 		var/datum/powernet/PN = new()
 		powernets += PN
 		PN.cables += src
-		PN.number = powernets.len
-		src.netnum = powernets.len
+		PN.number = length(powernets)
+		src.netnum = length(powernets)
 
 	else if (cable_d1)
 		var/datum/powernet/PN = powernets[cable_d1.netnum]
@@ -405,5 +407,10 @@
 	if (PN && istype(PN) && (PN.avail > 0))
 		powered = 1
 
-	logTheThing("station", user, null, "[cut == 0 ? "lays" : "cuts"] a cable[powered == 1 ? " (powered when [cut == 0 ? "connected" : "cut"])" : ""] at [log_loc(src)].")
+
+	if (cut) //avoid some slower string builds lol
+		logTheThing("station", user, null, "cuts a cable[powered == 1 ? " (powered when cut)" : ""] at [log_loc(src)].")
+	else
+		logTheThing("station", user, null, "lays a cable[powered == 1 ? " (powered when connected)" : ""] at [log_loc(src)].")
+
 	return

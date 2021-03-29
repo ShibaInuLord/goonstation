@@ -1,9 +1,17 @@
+var/list/ai_move_scheduled = list()
+
 /datum/aiHolder
-	var/mob/living/critter/owner = null
+	var/mob/living/owner = null
+	var/mob/living/carbon/human/ownhuman = null // for use when you would normally cast holder.owner as human for a proc.
 	var/atom/target = null // the simplest blackboard ever
 	var/datum/aiTask/current_task = null  // what the critter is currently doing
 	var/datum/aiTask/default_task = null  // what behavior the critter will fall back on
 	var/list/task_cache = list()
+	var/move_target = null
+
+	var/move_dist = 0
+	var/move_reverse = 0
+	var/move_side = 0 //merge with reverse later ok messy
 
 	var/enabled = 1
 
@@ -12,6 +20,8 @@
 	New(var/mob/M)
 		..()
 		owner = M
+		if(istype(M, /mob/living/carbon/human))
+			ownhuman = M
 		if (exclude_from_mobs_list)
 			mobs.Remove(M)
 			M.mob_flags |= LIGHTWEIGHT_AI_MOB
@@ -19,19 +29,19 @@
 
 	disposing()
 		..()
+		stop_move()
 		if (owner)
 			if (owner.mob_flags & LIGHTWEIGHT_AI_MOB)
 				owner.mob_flags &= ~LIGHTWEIGHT_AI_MOB
 				mobs.Add(owner)
 			ai_mobs.Remove(owner)
 			owner = null
+			ownhuman = null
 
 		target = null
-		if(current_task)
-			current_task.dispose()
+		current_task?.dispose()
 		current_task = null
-		if(default_task)
-			default_task.dispose()
+		default_task?.dispose()
 		default_task = null
 		if(task_cache)
 			for(var/key in task_cache)
@@ -42,6 +52,8 @@
 		..()
 
 	proc/tick()
+		if(isdead(owner))
+			enabled = 0
 		if(!enabled)
 			walk(owner, 0)
 			return
@@ -70,12 +82,68 @@
 
 	proc/interrupt()
 		if(src.enabled)
+			current_task?.reset()
 			current_task = default_task
 
 	proc/die()
 		src.enabled = 0
-		walk(owner, 0)
+		stop_move()
 		current_task = null
+
+	proc/move_to(var/A, var/dist = 1)
+		if (!move_target)
+			ai_move_scheduled += src
+		move_target = A
+		move_dist = dist
+		move_reverse = 0
+		move_side = 0
+
+	proc/move_away(var/A, var/dist = 6)
+		if (!move_target)
+			ai_move_scheduled += src
+		move_target = A
+		move_dist = dist
+		move_reverse = 1
+		move_side = 0
+
+	proc/move_circ(var/A, var/dist = 1)
+		if (!move_target)
+			ai_move_scheduled += src
+		move_target = A
+		move_dist = dist
+		move_reverse = prob(50)?0:1
+		move_side = 1
+
+	proc/stop_move()
+		move_target = null
+		ai_move_scheduled -= src
+		walk(owner,0)
+
+	proc/move_step()
+		if (src.move_side)
+			if (get_dist(src.owner,get_turf(src.move_target)) > src.move_dist)
+				var/turn = src.move_reverse?90:-90
+				src.owner.move_dir = turn( get_dir(src.owner,get_turf(src.move_target)),turn )
+				src.owner.process_move()
+		else if (src.move_reverse)
+			if (get_dist(src.owner,get_turf(src.move_target)) < src.move_dist)
+				var/turn = 180
+				switch(rand(1,4)) //fudge walk away behavior
+					if (1)
+						turn -= 45
+					if (2)
+						turn += 45
+
+				src.owner.move_dir = turn(get_dir(src.owner,get_turf(src.move_target)),turn)
+				src.owner.process_move()
+		else
+			if (get_dist(src.owner,get_turf(src.move_target)) > src.move_dist)
+				src.owner.move_dir = get_dir(src.owner,get_turf(src.move_target))
+				src.owner.process_move()
+
+
+	proc/was_harmed(obj/item/W, mob/M)
+		.=0
 
 /datum/aiTask
 	var/name = "task"
@@ -265,7 +333,7 @@
 
 	reset()
 		..()
-		if(subtasks && subtasks.len >= 1)
+		if(length(subtasks))
 			current_subtask = subtasks[1]
 			current_subtask.reset()
 		subtask_index = 1
@@ -280,6 +348,7 @@
 
 	// next task is not defined here, handled by sequence
 	proc/failed()
+		fails++
 		return fails >= max_fails
 
 	proc/succeeded()

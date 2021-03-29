@@ -5,7 +5,7 @@
 //How much of a punch this has, tends to be seconds/damage before any resist
 	power = 20
 //How much ammo this costs
-	cost = 15
+	cost = 25
 //How fast the power goes away
 	dissipation_rate = 1
 //How many tiles till it starts to lose power
@@ -17,6 +17,8 @@
 	sname = "stun"
 //file location for the sound you want it to play
 	shot_sound = 'sound/weapons/Taser.ogg'
+//should the sound have extra range?
+	shot_sound_extrarange = 5
 //How many projectiles should be fired, each will cost the full cost
 	shot_number = 1
 //What is our damage type
@@ -56,6 +58,17 @@ toxic - poisons
 				H.changeStatus("stunned", power)
 		return*/
 
+/datum/projectile/energy_bolt/bouncy
+	name = "ricochet energy bolt"
+	var/max_bounce_count = 1
+	var/reflect_on_nondense_hits = FALSE
+
+	on_hit(atom/hit, direction, obj/projectile/P)
+		if (!ismob(hit))
+			if (shoot_reflected_bounce(P, hit, max_bounce_count, PROJ_NO_HEADON_BOUNCE, reflect_on_nondense_hits))
+				elecflash(get_turf(P),radius=0, power=2, exclude_center = 0)
+		..()
+
 /datum/projectile/heavyion
 	name = "ion bolt"
 	icon = 'icons/obj/projectiles.dmi'
@@ -73,6 +86,7 @@ toxic - poisons
 	color_red = 0.2
 	color_green = 0.6
 	color_blue = 0.8
+	ie_type = "E"
 
 	on_hit(atom/hit)
 		if (isliving(hit))
@@ -80,7 +94,7 @@ toxic - poisons
 			L.changeStatus("slowed", 2 SECONDS)
 			L.change_misstep_chance(5)
 			L.emote("twitch_v")
-		impact_image_effect("E", hit)
+		impact_image_effect(ie_type, hit)
 		return
 
 /datum/projectile/energy_bolt/robust
@@ -89,7 +103,7 @@ toxic - poisons
 
 /datum/projectile/energy_bolt/burst
 	shot_number = 3
-	cost = 50
+	cost = 75
 	sname = "burst stun"
 
 
@@ -113,9 +127,11 @@ toxic - poisons
 		return
 
 /datum/projectile/energy_bolt/tasershotgun //Projectile for Azungar's taser shotgun.
-	power = 15
-	dissipation_delay = 4
-	dissipation_rate = 5
+	cost = 10
+	power = 17.5
+	dissipation_delay = 1
+	dissipation_rate = 2
+	max_range = 6
 	icon_state = "spark"
 
 //////////// VUVUZELA
@@ -156,20 +172,21 @@ toxic - poisons
 	window_pass = 0
 
 	disruption = 0
+	ie_type = "T"
 
 //Any special things when it hits shit?
 	on_hit(atom/hit) //purposefully not getting falloff, so it's not just a worse taser
 		if (isliving(hit))
 			var/mob/living/L = hit
 			L.apply_sonic_stun(1.5, 0, 25, 10, 0, rand(1, 3), stamina_damage = 80)
-			impact_image_effect("T", hit)
+			impact_image_effect(ie_type, hit)
 		return
 
  //purposefully keeping (some of) the pointblank double-dip,
  //because a staffie with a vuvu won't always have the option to follow up with a baton and cuffs, and this helps keep a guy down
 	on_pointblank(var/obj/projectile/P, var/mob/living/M)
 		M.apply_sonic_stun(3, 0, 25, 20, 0, rand(2, 4), stamina_damage = 80)
-		impact_image_effect("T", M)
+		impact_image_effect(ie_type, M)
 
 //////////// Ghost Hunting for Halloween
 /datum/projectile/energy_bolt_antighost
@@ -228,6 +245,7 @@ toxic - poisons
 	color_green = 165
 	color_blue = 0
 	max_range = 7 //slight range boost
+	damage_type = D_SPECIAL
 
 	on_hit(atom/O, angle, var/obj/projectile/P)
 		//lets make getting hit by the projectile a bit worse than getting the shockwave
@@ -235,13 +253,13 @@ toxic - poisons
 		if (isliving(O))
 			var/mob/living/L = O
 			L.changeStatus("slowed", 2 SECONDS)
-			L.do_disorient(stamina_damage = 2*P.power, weakened = 0, stunned = 0, disorient = P.power, remove_stamina_below_zero = 0)
+			L.do_disorient(stamina_damage = 60, weakened = 30, stunned = 0, disorient = 20, remove_stamina_below_zero = 0)
 			L.emote("twitch_v")
 		detonate(O, P)
 
 	on_max_range_die(obj/projectile/O)
 		detonate(O, O)
-		
+
 	proc/detonate(atom/O, var/obj/projectile/P)
 		if (istype(O, /obj/projectile))
 			var/obj/projectile/proj = O
@@ -253,7 +271,7 @@ toxic - poisons
 			if (isliving(M) && M != P.shooter) //don't stun ourself while shooting in close quarters
 				var/mob/living/L = M
 				L.changeStatus("slowed", 2 SECONDS)
-				L.do_disorient(stamina_damage = 70, weakened = 50, stunned = 80, disorient = 20, remove_stamina_below_zero = 0)
+				L.do_disorient(stamina_damage = 40, weakened = 0, stunned = 0, disorient = 20, remove_stamina_below_zero = 0)
 				L.emote("twitch_v")
 
 
@@ -266,6 +284,7 @@ toxic - poisons
 	icon_state = "shockwave"
 
 	New(var/x_val, var/y_val)
+		..()
 		pixel_x = x_val
 		pixel_y = y_val
 		src.Scale(0.4,0.4)
@@ -287,32 +306,19 @@ toxic - poisons
 	icon_state = "pulse"
 	power = 20
 	cost = 35
-	sname = "pulse"
-	shot_sound = 'sound/weapons/Taser.ogg'
+	sname = "kinetic pulse"
+	shot_sound = 'sound/weapons/pulse.ogg'
 	damage_type = D_ENERGY
 	hit_ground_chance = 30
-	brightness = 0
+	brightness = 1
+	color_red = 0.18
+	color_green = 0.2
+	color_blue = 1
+
 	disruption = 8
 
 	hit_mob_sound = 'sound/effects/sparks6.ogg'
-#if ASS_JAM
 
-	on_pointblank(var/obj/projectile/P, var/mob/living/M)
-		// var/dir = angle2dir(angle)
-		M.throw_at(get_edge_target_turf(M, get_dir(M, P)),7,1, throw_type = THROW_GUNIMPACT)
-		//When it hits a mob or such should anything special happen
-	on_hit(atom/hit, angle, var/obj/projectile/O)
-		// var/dir = angle2dir(angle)
-		var/dir = get_dir(hit, O.shooter)
-		var/pow = O.power
-		O.die()
-		if (ishuman(hit))
-			var/mob/living/carbon/human/H = hit
-			H.do_disorient(stamina_damage = pow*3, weakened = 0, stunned = 0, disorient = pow*4, remove_stamina_below_zero = 0)
-			H.throw_at(get_edge_target_turf(hit, dir),(pow-7)/2,1, throw_type = THROW_GUNIMPACT)
-			H.emote("twitch_v")
-			H.changeStatus("slowed", 3 SECONDS)
-#else
 	on_pointblank(var/obj/projectile/P, var/mob/living/M)
 		// var/dir = angle2dir(angle)
 		M.throw_at(get_edge_target_turf(M, get_dir(P, M)),7,1, throw_type = THROW_GUNIMPACT)
@@ -330,29 +336,92 @@ toxic - poisons
 			H.emote("twitch_v")
 			H.changeStatus("slowed", 3 SECONDS)
 
-#endif
 	impact_image_effect(var/type, atom/hit, angle, var/obj/projectile/O)
 		return
 
 
-/datum/projectile/energybolt/reliquary_burst
-	name = "energy"
-	shot_sound = null
-	power = 1
-	cost = 2
+/datum/projectile/energy_bolt/electromagnetic_pulse
+	name = "pulse"
 	icon = 'icons/obj/projectiles.dmi'
-	icon_state = "relibullet"
-	shot_number = 16
-	shot_delay = 0.7
-	dissipation_delay = 8
-	damage_type = D_ENERGY
-	hit_ground_chance = 30
+	icon_state = "pulse"
+	power = 20
+	cost = 100
+	sname = "electromagnetic pulse"
+	shot_sound = 'sound/weapons/Taser.ogg'
+	damage_type = D_SPECIAL
+	hit_ground_chance = 0
 	brightness = 1
+	color_red = 0.18
+	color_green = 0.2
+	color_blue = 1
+
+	disruption = 25
+
+	hit_mob_sound = 'sound/effects/sparks6.ogg'
+
+	on_hit(atom/H, angle, var/obj/projectile/P)
+		var/turf/T = get_turf(H)
+		for(var/turf/tile in range(1, T))
+			for(var/atom/movable/O in tile.contents)
+				if(!istype(O, /obj/machinery/nuclearbomb)) //emp does not affect nuke
+					O.emp_act()
+		elecflash(T)
+
+/datum/projectile/energy_bolt/signifer_tase
+	name = "signifer spark"
+	icon = 'icons/obj/projectiles.dmi'
+	icon_state = "signifer2_tase"
+	shot_sound = 'sound/weapons/SigTase.ogg'
+	cost = 12
+	power = 10
+	ks_ratio = 0.1
+
+	sname = "non-lethal"
+	damage_type = D_ENERGY
+	hit_ground_chance = 0
+	brightness = 1
+	color_red = 1
+	color_green = 1
+	color_blue = 0
+
+	disruption = 2
+	ie_type = "T"
+
+	hit_mob_sound = 'sound/effects/sparks6.ogg'
+
+/datum/projectile/energy_bolt/smgburst
+	name = "energy bolt"
+	icon = 'icons/obj/projectiles.dmi'
+	icon_state = "taser_projectile"
+	power = 15
+	cost = 50
+	max_range = 12
+	ks_ratio = 0.0
+	sname = "burst"
+	shot_sound = 'sound/weapons/Taser.ogg'
+	shot_sound_extrarange = 5
+	shot_number = 2
+	damage_type = D_ENERGY
+
 	disruption = 8
-	icon_turf_hit = "bhole-small"
 
-	on_hit(atom/hit, dirflag)
-		if(ishuman(hit))
-			var/mob/living/carbon/human/M = hit
-			M.changeStatus("slowed", 1.5 SECONDS)
+	hit_mob_sound = 'sound/effects/sparks6.ogg'
 
+/datum/projectile/energy_bolt/smgauto
+	name = "energy bolt"
+	icon = 'icons/obj/projectiles.dmi'
+	icon_state = "signifer2_tase"
+	power = 10
+	cost = 12
+	max_range = 8
+	ks_ratio = 0.0
+	sname = "full-auto"
+	shot_sound = 'sound/weapons/SigTase.ogg'
+	shot_sound_extrarange = 5
+	shot_number = 1
+	damage_type = D_ENERGY
+	fullauto_valid = 1
+
+	disruption = 8
+
+	hit_mob_sound = 'sound/effects/sparks6.ogg'

@@ -117,7 +117,7 @@
 					new /obj/machinery/door/airlock/external(T)
 			new /area/station/hallway/secondary/construction(T)
 			if (holds_items)
-				if (cx == manx && manufacturers.len)
+				if (cx == manx && length(manufacturers))
 					var/object = pick(manufacturers)
 					manufacturers -= object
 					new object(T)
@@ -412,7 +412,7 @@
 
 /proc/debug_supply_pack()
 	var/thepath = input("Path", "Path", "/datum/supply_packs") as text
-	if (!lentext(thepath))
+	if (!length(thepath))
 		return
 	var/therealpath = text2path(thepath)
 	if (therealpath)

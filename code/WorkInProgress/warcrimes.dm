@@ -8,17 +8,9 @@ var/fartcount = 0
 	icon_state = "green"
 	name = "Big Yank's Cheap Tug"
 
-/area/shuttle/john/diner
-	icon_state = "shuttle"
-
-/area/shuttle/john/owlery
-	icon_state = "shuttle2"
-
-/area/shuttle/john/mining
-	icon_state = "shuttle2"
-
-/area/shuttle/john/grillnasium
-	icon_state = "shuttle"
+/area/diner/jucer_trader
+	icon_state = "green"
+	name = "Placeholder Pete's $STORE_NAME.shuttle"
 
 /obj/item/clothing/head/paper_hat/john
 	name = "John Bill's paper bus captain hat"
@@ -29,6 +21,7 @@ var/fartcount = 0
 	on = 1
 	put_out(var/mob/user as mob, var/message as text)
 		// how about we do literally nothing instead?
+		// please stop doing the thing you keep doing.
 
 /obj/item/clothing/shoes/thong
 	name = "garbage flip-flops"
@@ -65,58 +58,72 @@ var/fartcount = 0
 		setProperty("conductivity", 1)
 
 
-var/list/JOHN_greetings = strings("johnbill.txt", "greetings")
-var/list/JOHN_rude = strings("johnbill.txt", "rude")
-var/list/JOHN_insults = strings("johnbill.txt", "insults")
-var/list/JOHN_people = strings("johnbill.txt", "people")
-var/list/JOHN_question = strings("johnbill.txt", "question")
-var/list/JOHN_item = strings("johnbill.txt", "item")
-var/list/JOHN_drugs = strings("johnbill.txt", "drugs")
-var/list/JOHN_nouns = strings("johnbill.txt", "nouns")
-var/list/JOHN_verbs = strings("johnbill.txt", "verbs")
-var/list/JOHN_stories = strings("johnbill.txt", "stories1") + strings("johnbill.txt", "stories2") + strings("johnbill.txt", "stories3")
-var/list/JOHN_doMiss = strings("johnbill.txt", "domiss")
-var/list/JOHN_dontMiss = strings("johnbill.txt", "dontmiss")
-var/list/JOHN_friends = strings("johnbill.txt", "friends")
-var/list/JOHN_friendActions = strings("johnbill.txt", "friendsactions")
-var/list/JOHN_emotes = strings("johnbill.txt", "emotes")
-var/list/JOHN_deadguy = strings("johnbill.txt", "deadguy")
-var/list/JOHN_murray = strings("johnbill.txt", "murraycompliment")
-var/list/JOHN_grilladvice = strings("johnbill.txt", "grilladvice")
+
+/obj/machinery/vending/meat //MEAT VENDING MACHINE
+	name = "Meat4cash"
+	desc = "An exotic meat vendor."
+	icon_state = "steak"
+	icon_panel = "standard-panel"
+	icon_off = "monkey-off"
+	icon_broken = "monkey-broken"
+	icon_fallen = "monkey-fallen"
+	pay = 1
+	acceptcard = 1
+	slogan_list = list("It's meat you can buy!",
+	"Trade your money for meat!",
+	"Buy the meat! It's meat!",
+	"Why not buy the meat?",
+	"Please, please buy meat.")
+
+	light_r = 0.9
+	light_g = 0.1
+	light_b = 0.1
+
+	create_products()
+		..()
+		product_list += new/datum/data/vending_product(/obj/item/reagent_containers/food/snacks/ingredient/meat/mysterymeat, 10, cost=PAY_UNTRAINED/4)
+		product_list += new/datum/data/vending_product(/obj/item/reagent_containers/food/snacks/ingredient/meat/monkeymeat, 10, cost=PAY_UNTRAINED/5)
+		product_list += new/datum/data/vending_product(/obj/item/reagent_containers/food/snacks/ingredient/meat/synthmeat, 20, cost=PAY_UNTRAINED/6)
+
+		product_list += new/datum/data/vending_product(/obj/item/reagent_containers/food/snacks/ingredient/meat/humanmeat, 2, cost=PAY_UNTRAINED, hidden=1)
+
+
 
 
 // all of john's area specific lines here
-area/var/john_talk = null
-area/owlery/owleryhall/john_talk = list("Oh dang, That's me! Wait... Oh dang guys, I think I'm banned from here.","Hope these guys don't mind I stole their bus.","Oh i've seen a scanner like that before. Lotta radiation.","Hey that thing there? Looks important.")
-area/owlery/owleryhall/gangzone/john_talk = list("I don't likesa the looksa these Italians, brud","That's some tough lookin boids- We cool?","Oughta grill a couple of these types. Grill em well done.")
-area/diner/dining/john_talk = list("This place smells a lot like my bro.","This was a good spot to park the bus.","Y'all got a grill in here?","Could do a lot of crimes back there. Probably will.")
-area/diner/bathroom/john_talk = list("I haven't been here in a foggy second!", "I wonder what the fungus on the walls here tastes like... wanna juice it?", "I always wondered what happened to this toilet.")
-area/diner/motel/john_talk = list("Ain't much to look at, but we got the hull for this section pretty cheap!","Uh, don't bother with room 3- it's a little uh... rough.","Mmmm Mmm still smells like salvage.")
-area/diner/motel/observatory/john_talk = list("What a goddamn view.","Never thought I'd have a place like this.")
-area/diner/motel/pool/john_talk = list("Hey brungo, got any water? Like ten to twenty tonnes, eh?","It's a shame I can't swim, on account of the pirate's code.","I've seen this place in a video.")
-area/diner/motel/chemstorage/john_talk = list("Good a time as any to learn chemistry, I guess.","Think I can sell any of this juice?")
-area/lower_arctic/lower/john_talk = list("I ain't a fan of wendibros, they steal my meat.","Chilly eh?")
-area/moon/museum/west/john_talk = list("Got lost here once. More than once. Every time.","You got a map, beardo?","Can we go home yet?")
-area/jones/bar/john_talk = list("When the heck am I gonna get some service here, I'm parched!","What do I gotta start purrin' to get a drink here?","What's the holdup, catscratch? Let's get this party started!")
-area/solarium/john_talk = list("You kids will try anything, wontcha?","Nice sun, dorkus.","So it's a star? Big deal.","I betcha my bus coulda got us here faster, dork.","All righty, now let's grill a steak on that thing!","You bring any snacks?")
-area/marsoutpost/john_talk= list("Things weren't this dry last time I was here.","Really let the place go to the rats didn't they.","Great place for a cookout, if you ask me.")
-area/marsoutpost/duststorm/john_talk= list("Aw fuck, I've seen storms like this before. Where the hell was that planet...","Gehenna awaits.")
-area/sim/racing_entry/john_talk = list("Haha I'm a Nintendo","Beep Boop","Lookit Ma'! I'm in the computer!","Ey cheggit out! Pixels!")
-area/crypt/sigma/mainhall/john_talk = list("Looks a heck a spooky in here","Wonder if there's any meat in that swamp?")
-area/iomoon/base/john_talk = list("Yknow, I think it's almost too hot to grill out there.","This place is a lot shittier than Mars, y'know that?","I didn't really wanna come along you know. I did this for you.")
-area/dojo/john_talk = list("Eyyy, just like my cartoons!","What a sight! Gotta admire the Italians, eh?")
-area/dojo/sakura/john_talk = list("Shoshun mazu, Sake ni ume uru, Nioi kana","Haru moya ya, Keshiki totonou, Tsuki to ume","Hana no kumo, Kane ha Ueno ka, Asakusa ka")
-area/meat_derelict/entry/john_talk = list("Oooh baby now we're talkin! Now we're talkin!","Oh heck yeah now that's my kind of adventure, eh?","Oh boy do I have a good feelin' about this one!")
-area/meat_derelict/main/john_talk = list("Aw yeah dog, this place just gets better and better!","Mmm Mmm! That smells fresh and ready for a grillin'!")
-area/meat_derelict/guts/john_talk = list("And just when I thought it couldnt get better.","Pinch me, I'm dreaming!","Smells good in here, like vinegar!")
-area/meat_derelict/boss/john_talk = list("I'm gonna need a bigger grill.","Fuck that's a big steak!","Oooh mama we are cooked now!")
-area/meat_derelict/soviet/john_talk = list("Betcha these rooskies don't even own a grill","Wonder what these reds are doin in my steak palace?","Ah, gotta debone that before ya cook it.")
-area/bee_trader/john_talk = list("That little Bee, always gettin' inta trouble.","Hey remember that weird puzzle with the showerheads?","What a nasty museum that was, eh? Nasty.")
-area/flock_trader/john_talk = list("Woah, what's with these teal chickens? Must be good grillin'.","I feel like this was revealed to me in a fever dream once.","Dang, that's a mighty fine chair.")
-area/timewarp/ship/john_talk = list("I wonder if my ol' compadre Murray is around.","Did ya see those clocks outside? Time just flies by.","I swear I saw a ship just like this years ago, but somewhere else.","Didn't they use to haul some strange stuff on these gals?")
-area/derelict_ai_sat/core/john_talk = list("Hello, Daddy.","You should probably start writing down the shit I say, I certainly can't remember any of it.")
-area/adventure/urs_dungeon/john_talk = list("This place smells like my bro.","Huh, Always wondered what those goggles did.","Huh, Always wondered what those goggles did.","Your hubris will be punished. Will you kill your fellow man to save yourself? Who harvests the harvestmen? What did it feel like when you lost your mind?")
+/area/var/john_talk = null
+/area/owlery/owleryhall/john_talk = list("Oh dang, That's me! Wait... Oh dang guys, I think I'm banned from here.","Hope these guys don't mind I stole their bus.","Oh i've seen a scanner like that before. Lotta radiation.","Hey that thing there? Looks important.")
+/area/owlery/owleryhall/gangzone/john_talk = list("I don't likesa the looksa these Italians, brud","That's some tough lookin boids- We cool?","Oughta grill a couple of these types. Grill em well done.")
+/area/diner/dining/john_talk = list("This place smells a lot like my bro.","This was a good spot to park the bus.","Y'all got a grill in here?","Could do a lot of crimes back there. Probably will.")
+/area/diner/bathroom/john_talk = list("I haven't been here in a foggy second!", "I wonder what the fungus on the walls here tastes like... wanna juice it?", "I always wondered what happened to this toilet.")
+/area/diner/motel/john_talk = list("Ain't much to look at, but we got the hull for this section pretty cheap!","Uh, don't bother with room 3- it's a little uh... rough.","Mmmm Mmm still smells like salvage.")
+/area/diner/motel/observatory/john_talk = list("What a goddamn view.","Never thought I'd have a place like this.")
+/area/diner/motel/pool/john_talk = list("Hey brungo, got any water? Like ten to twenty tonnes, eh?","It's a shame I can't swim, on account of the pirate's code.","I've seen this place in a video.")
+/area/diner/motel/chemstorage/john_talk = list("Good a time as any to learn chemistry, I guess.","Think I can sell any of this juice?")
+/area/lower_arctic/lower/john_talk = list("I ain't a fan of wendibros, they steal my meat.","Chilly eh?")
+/area/moon/museum/west/john_talk = list("Got lost here once. More than once. Every time.","You got a map, beardo?","Can we go home yet?")
+/area/jones/bar/john_talk = list("When the heck am I gonna get some service here, I'm parched!","What do I gotta start purrin' to get a drink here?","What's the holdup, catscratch? Let's get this party started!")
+/area/solarium/john_talk = list("You kids will try anything, wontcha?","Nice sun, dorkus.","So it's a star? Big deal.","I betcha my bus coulda got us here faster, dork.","All righty, now let's grill a steak on that thing!","You bring any snacks?")
+/area/marsoutpost/john_talk= list("Things weren't this dry last time I was here.","Really let the place go to the rats didn't they.","Great place for a cookout, if you ask me.")
+/area/marsoutpost/duststorm/john_talk= list("Aw fuck, I've seen storms like this before. Where the hell was that planet...","Gehenna awaits.")
+/area/sim/racing_entry/john_talk = list("Haha I'm a Nintendo","Beep Boop","Lookit Ma'! I'm in the computer!","Ey cheggit out! Pixels!")
+/area/crypt/sigma/mainhall/john_talk = list("Looks a heck a spooky in here","Wonder if there's any meat in that swamp?")
+/area/iomoon/base/john_talk = list("Yknow, I think it's almost too hot to grill out there.","This place is a lot shittier than Mars, y'know that?","I didn't really wanna come along you know. I did this for you.")
+/area/dojo/john_talk = list("Eyyy, just like my cartoons!","What a sight! Gotta admire the Italians, eh?")
+/area/dojo/sakura/john_talk = list("Shoshun mazu, Sake ni ume uru, Nioi kana","Haru moya ya, Keshiki totonou, Tsuki to ume","Hana no kumo, Kane ha Ueno ka, Asakusa ka")
+/area/meat_derelict/entry/john_talk = list("Oooh baby now we're talkin! Now we're talkin!","Oh heck yeah now that's my kind of adventure, eh?","Oh boy do I have a good feelin' about this one!")
+/area/meat_derelict/main/john_talk = list("Aw yeah dog, this place just gets better and better!","Mmm Mmm! That smells fresh and ready for a grillin'!")
+/area/meat_derelict/guts/john_talk = list("And just when I thought it couldnt get better.","Pinch me, I'm dreaming!","Smells good in here, like vinegar!")
+/area/meat_derelict/boss/john_talk = list("I'm gonna need a bigger grill.","Fuck that's a big steak!","Oooh mama we are cooked now!")
+/area/meat_derelict/soviet/john_talk = list("Betcha these rooskies don't even own a grill","Wonder what these reds are doin in my steak palace?","Ah, gotta debone that before ya cook it.")
+/area/bee_trader/john_talk = list("That little Bee, always gettin' inta trouble.","Hey remember that weird puzzle with the showerheads?","What a nasty museum that was, eh? Nasty.")
+/area/flock_trader/john_talk = list("Woah, what's with these teal chickens? Must be good grillin'.","I feel like this was revealed to me in a fever dream once.","Dang, that's a mighty fine chair.")
+/area/timewarp/ship/john_talk = list("I wonder if my ol' compadre Murray is around.","Did ya see those clocks outside? Time just flies by.","I swear I saw a ship just like this years ago, but somewhere else.","Didn't they use to haul some strange stuff on these gals?")
+/area/derelict_ai_sat/core/john_talk = list("Hello, Daddy.","You should probably start writing down the shit I say, I certainly can't remember any of it.")
+/area/adventure/urs_dungeon/john_talk = list("This place smells like my bro.","Huh, Always wondered what those goggles did.","Huh, Always wondered what those goggles did.","Your hubris will be punished. Will you kill your fellow man to save yourself? Who harvests the harvestmen? What did it feel like when you lost your mind?")
 /area/grillnasium/grill_chamber/john_talk = list("You better know what you've started.","This is where it happens.")
+
+
 
 // bus driver
 /mob/living/carbon/human/john
@@ -127,44 +134,48 @@ area/adventure/urs_dungeon/john_talk = list("This place smells like my bro.","Hu
 	var/greeted_murray = 0
 	var/list/snacks = null
 	var/gotsmokes = 0
+	var/nude = 0
+
+	nude
+		nude = 1
 
 	New()
 		..()
-		johnbills += src
-		SPAWN_DBG(0)
-			bioHolder.mobAppearance.customization_first = "Tramp"
-			bioHolder.mobAppearance.customization_first_color = "#281400"
-			bioHolder.mobAppearance.customization_second = "Pompadour"
-			bioHolder.mobAppearance.customization_second_color = "#241200"
-			bioHolder.mobAppearance.customization_third = "Tramp: Beard Stains"
-			bioHolder.mobAppearance.customization_third_color = "#663300"
-			bioHolder.age = 63
-			bioHolder.bloodType = "A+"
-			bioHolder.mobAppearance.gender = "male"
-			bioHolder.mobAppearance.underwear = "briefs"
-			bioHolder.mobAppearance.u_color = "#996633"
+		START_TRACKING_CAT(TR_CAT_JOHNBILLS)
+		if(nude)
+			return
+		src.equip_new_if_possible(/obj/item/clothing/shoes/thong, slot_shoes)
+		src.equip_new_if_possible(/obj/item/clothing/under/color/orange, slot_w_uniform)
+		src.equip_new_if_possible(/obj/item/clothing/mask/cigarette/john, slot_wear_mask)
+		src.equip_new_if_possible(/obj/item/clothing/suit/labcoat, slot_wear_suit)
+		src.equip_new_if_possible(/obj/item/clothing/head/paper_hat/john, slot_head)
 
-			SPAWN_DBG(1 SECOND)
-				bioHolder.mobAppearance.UpdateMob()
-
-			src.equip_new_if_possible(/obj/item/clothing/shoes/thong, slot_shoes)
-			src.equip_new_if_possible(/obj/item/clothing/under/color/orange, slot_w_uniform)
-			src.equip_new_if_possible(/obj/item/clothing/mask/cigarette/john, slot_wear_mask)
-			src.equip_new_if_possible(/obj/item/clothing/suit/labcoat, slot_wear_suit)
-			src.equip_new_if_possible(/obj/item/clothing/head/paper_hat/john, slot_head)
-
-			var/obj/item/implant/access/infinite/shittybill/implant = new /obj/item/implant/access/infinite/shittybill(src)
-			implant.implanted(src, src)
+		var/obj/item/implant/access/infinite/shittybill/implant = new /obj/item/implant/access/infinite/shittybill(src)
+		implant.implanted(src, src)
 
 	disposing()
-		johnbills -= src
+		STOP_TRACKING_CAT(TR_CAT_JOHNBILLS)
 		..()
+
+	initializeBioholder()
+		bioHolder.mobAppearance.customization_first = "Tramp"
+		bioHolder.mobAppearance.customization_first_color = "#281400"
+		bioHolder.mobAppearance.customization_second = "Pompadour"
+		bioHolder.mobAppearance.customization_second_color = "#241200"
+		bioHolder.mobAppearance.customization_third = "Tramp: Beard Stains"
+		bioHolder.mobAppearance.customization_third_color = "#663300"
+		bioHolder.age = 63
+		bioHolder.bloodType = "A+"
+		bioHolder.mobAppearance.gender = "male"
+		bioHolder.mobAppearance.underwear = "briefs"
+		bioHolder.mobAppearance.u_color = "#996633"
+		. = ..()
 
 	// John Bill always goes to the afterlife bar.
 	death(gibbed)
 		..(gibbed)
 
-		johnbills.Remove(src)
+		STOP_TRACKING_CAT(TR_CAT_JOHNBILLS)
 
 		if (!src.client)
 			var/turf/target_turf = pick(get_area_turfs(/area/afterlife/bar/barspawn))
@@ -212,11 +223,11 @@ area/adventure/urs_dungeon/john_talk = list("This place smells like my bro.","Hu
 			if(prob(20) && src.canmove && isturf(src.loc))
 				step(src, pick(NORTH, SOUTH, EAST, WEST))
 			if(prob(2))
-				SPAWN_DBG(0) emote(pick(JOHN_emotes))
+				SPAWN_DBG(0) emote(JOHN_PICK("emotes"))
 			if(prob(15))
 				snacktime()
 			var/area/A = get_area(src)
-			if(prob(talk_prob) || A.john_talk)
+			if(prob(talk_prob) || A?.john_talk)
 				src.speak()
 
 	proc/snacktime()
@@ -232,22 +243,29 @@ area/adventure/urs_dungeon/john_talk = list("This place smells like my bro.","Hu
 					src.visible_message("<span class='alert'>[src] horks up a lump from his stomach... </span>")
 			snacc.Eat(src,src,1)
 
+	proc/pacify()
+		src.a_intent = INTENT_HELP
+		src.target = null
+		src.ai_state = 0
+		src.ai_target = null
 
 	proc/speak()
+		if(nude)
+			return // nude john is for looking at, not listening to.
 		SPAWN_DBG(0)
 			var/list/grills = list()
 
-			var/obj/machinery/bot/guardbot/old/tourguide/murray = pick(tourguides)
+			var/obj/machinery/bot/guardbot/old/tourguide/murray = pick(by_type[/obj/machinery/bot/guardbot/old/tourguide])
 			if (murray && get_dist(src,murray) > 7)
 				murray = null
 			if (istype(murray))
-				if (!findtext(murray.name, "murray"))
+				if (!findtext(murray.name, "murraycompliment"))
 					murray = null
 
 			var/area/A = get_area(src)
 			var/list/alive_mobs = list()
 			var/list/dead_mobs = list()
-			if (A.population && A.population.len)
+			if (A && A.population && length(A.population))
 				for(var/mob/living/M in oview(5,src))
 					if(!isdead(M))
 						alive_mobs += M
@@ -271,31 +289,31 @@ area/adventure/urs_dungeon/john_talk = list("This place smells like my bro.","Hu
 						if (0 to 15)
 							say("Yep, \the [G.grillitem] needs a little more time.")
 						if (16 to 49)
-							say("[pick(JOHN_rude)], [pick(JOHN_grilladvice)] [G.grillitem].")
+							say("[JOHN_PICK("rude")], [JOHN_PICK("grilladvice")] [G.grillitem].")
 						if (50 to 59)
 							say("Whoa! \The [G.grillitem] is cooked to perfection! Lemme get that for ya!")
 							G.eject_food()
 						else
-							say("Good fuckin' job [pick(JOHN_insults)], you burnt it.")
+							say("Good fuckin' job [JOHN_PICK("insults")], you burnt it.")
 				else
 					if (G.grilltemp >= 200 + T0C)
 						if(prob(70))
-							say("That there ol' [G] looks about ready for a [pick(JOHN_drugs)]-seasoned steak!")
+							say("That there ol' [G] looks about ready for a [JOHN_PICK("drugs")]-seasoned steak!")
 						else
 							say("That [G] is hot! Who's grillin' ?")
 					else
 						say("Anyone gonna fire up \the [G]?")
 
-			else if(prob(40) && dead_mobs && dead_mobs.len > 0) //SpyGuy for undefined var/len (what the heck)
+			else if(prob(40) && length(dead_mobs))
 				var/mob/M = pick(dead_mobs)
-				say("[pick(JOHN_deadguy)] [M.name]...")
+				say("[JOHN_PICK("deadguy")] [M.name]...")
 			else if (alive_mobs.len > 0)
 				if (murray && !greeted_murray)
 					greeted_murray = 1
-					say("[pick(JOHN_greetings)] Murray! How's it [pick(JOHN_verbs)]?")
+					say("[JOHN_PICK("greetings")] Murray! How's it [JOHN_PICK("verbs")]?")
 					SPAWN_DBG(rand(20,40))
-						if (murray && murray.on && !murray.idle)
-							murray.speak("Hi, John! It's [pick(JOHN_murray)] to see you here, of all places.")
+						if (murray?.on && !murray.idle)
+							murray.speak("Hi, John! It's [JOHN_PICK("murraycompliment")] to see you here, of all places.")
 
 				else
 					var/mob/M = pick(alive_mobs)
@@ -303,52 +321,53 @@ area/adventure/urs_dungeon/john_talk = list("This place smells like my bro.","Hu
 
 					switch(speech_type)
 						if(1)
-							say("[pick(JOHN_greetings)] [M.name].")
+							say("[JOHN_PICK("greetings")] [M.name].")
+							M.add_karma(2)
 
 						if(2)
-							say("[pick(JOHN_question)] you lookin' at, [pick(JOHN_insults)]?")
+							say("[JOHN_PICK("question")] you lookin' at, [JOHN_PICK("insults")]?")
 
 						if(3)
-							say("You a [pick(JOHN_people)]?")
+							say("You a [JOHN_PICK("people")]?")
 
 						if(4)
-							say("[pick(JOHN_rude)], gimme yer [pick(JOHN_item)].")
+							say("[JOHN_PICK("rude")], gimme yer [JOHN_PICK("item")].")
 
 						if(5)
-							say("Got a light, [pick(JOHN_insults)]?")
+							say("Got a light, [JOHN_PICK("insults")]?")
 
 						if(6)
-							say("Nice [pick(JOHN_nouns)], [pick(JOHN_insults)].")
+							say("Nice [JOHN_PICK("nouns")], [JOHN_PICK("insults")].")
 
 						if(7)
-							say("Got any [pick(JOHN_drugs)]?")
+							say("Got any [JOHN_PICK("drugs")]?")
 
 						if(8)
-							say("I ever tell you 'bout [pick(JOHN_stories)]?")
+							say("I ever tell you 'bout [JOHN_PICK("stories")]?")
 
 						if(9)
-							say("You [pick(JOHN_verbs)]?")
+							say("You [JOHN_PICK("verbs")]?")
 
 						if(10)
 							if (prob(50))
-								say("Man, I sure miss [pick(JOHN_doMiss)].")
+								say("Man, I sure miss [JOHN_PICK("domiss")].")
 							else
-								say("Man, I sure don't miss [pick(JOHN_dontMiss)].")
+								say("Man, I sure don't miss [JOHN_PICK("dontmiss")].")
 
 						if(11)
-							say("I think my [pick(JOHN_friends)] [pick(JOHN_friendActions)].")
+							say("I think my [JOHN_PICK("friends")] [JOHN_PICK("friendsactions")].")
 
-					if (prob(25) && shittybills.len > 0)
+					if (prob(25) && length(by_cat[TR_CAT_SHITTYBILLS]))
 						SPAWN_DBG(3.5 SECONDS)
-							var/mob/living/carbon/human/biker/MB = pick(shittybills)
+							var/mob/living/carbon/human/biker/MB = pick(by_cat[TR_CAT_SHITTYBILLS])
 							switch (speech_type)
 								if (4)
 									MB.say("You borrowed mine fifty years ago, and I never got it back.")
 								if (7)
-									MB.say("If I had any, I wouldn't share it with ya [pick(BILL_insults)].")
+									MB.say("If I had any, I wouldn't share it with ya [pick_string("shittybill.txt", "insults")].")
 								if (8)
 									if (prob(2))
-										MB.say("One of these days, you oughta. I don't believe it for a second but let's hear it, [pick(BILL_people)].")
+										MB.say("One of these days, you oughta. I don't believe it for a second but let's hear it, [pick_string("shittybill.txt", "people")].")
 									else if (prob(6))
 										MB.say("No way, [src].")
 									else
@@ -368,14 +387,14 @@ area/adventure/urs_dungeon/john_talk = list("This place smells like my bro.","Hu
 			if(ON_COOLDOWN(src, "attackby_chatter", 3 SECONDS)) return
 			boutput(M, "<span class='notice'><b>You show [W] to [src]</b> </span>")
 			SPAWN_DBG(1 SECOND)
-				say("One of them [pick(JOHN_people)] folks from the station helped us raise the cash. Lil bro been dreamin bout it fer years.")
+				say("One of them [JOHN_PICK("people")] folks from the station helped us raise the cash. Lil bro been dreamin bout it fer years.")
 			return
 		#ifdef SECRETS_ENABLED
 		if (istype(W, /obj/item/paper/grillnasium/fartnasium_recruitment))
 			if(ON_COOLDOWN(src, "attackby_chatter", 3 SECONDS)) return
 			boutput(M, "<span class='notice'><b>You show [W] to [src]</b> </span>")
 			SPAWN_DBG(1 SECOND)
-				say("Well hot dog! [pick(JOHN_insults)], you wouldn't believe it but I use to work there!")
+				say("Well hot dog! [JOHN_PICK("insults")], you wouldn't believe it but I use to work there!")
 				johnbill_shuttle_fartnasium_active = 1
 				sleep(2 SECONDS)
 				say("Yer dag right we can go Juicin around in there! Pack yer shit we're doin a B&E ! ! ! ")
@@ -393,11 +412,8 @@ area/adventure/urs_dungeon/john_talk = list("This place smells like my bro.","Hu
 
 			SPAWN_DBG(1 DECI SECOND)
 				say("Oh? [W] eh?")
-				say(pick("No kiddin' fer me?","I guess I could go fer a quick one yeah!","Oh dang dang dang! Haven't had one of these babies in a while!","Well I never get tired of those!","You're offering this to me? Don't mind if i do, [pick(JOHN_people)]"))
-				src.a_intent = INTENT_HELP // pacify a juicer with food, obviously
-				src.target = null
-				src.ai_state = 0
-				src.ai_target = null
+				say(pick("No kiddin' fer me?","I guess I could go fer a quick one yeah!","Oh dang dang dang! Haven't had one of these babies in a while!","Well I never get tired of those!","You're offering this to me? Don't mind if i do, [JOHN_PICK("people")]"))
+				pacify()
 
 				if (istype(W, /obj/item/clothing/mask/cigarette/cigarillo/juicer))
 					gotsmokes = 1
@@ -444,20 +460,22 @@ area/adventure/urs_dungeon/john_talk = list("This place smells like my bro.","Hu
 			return
 		..()
 
-	was_harmed(var/mob/M as mob, var/obj/item/weapon = 0, var/special = 0)
+	was_harmed(var/mob/M as mob, var/obj/item/weapon = 0, var/special = 0, var/intent = null)
+		. = ..()
 		if (special) //vamp or ling
 			src.target = M
-			src.ai_state = 2
+			src.ai_state = AI_ATTACKING
 			src.ai_threatened = world.timeofday
 			src.ai_target = M
 			src.a_intent = INTENT_HARM
 			src.ai_set_active(1)
 
-		for (var/mob/SB in shittybills)
+		for (var/mob/SB in by_cat[TR_CAT_SHITTYBILLS])
 			var/mob/living/carbon/human/biker/S = SB
 			if (get_dist(S,src) <= 7)
 				if(!(S.ai_active) || (prob(25)))
-					S.say("That's my brother, you [pick(JOHN_insults)]!")
+					S.say("That's my brother, you [JOHN_PICK("insults")]!")
+					M.add_karma(-1)
 				S.target = M
 				S.ai_set_active(1)
 				S.a_intent = INTENT_HARM
@@ -465,212 +483,6 @@ area/adventure/urs_dungeon/john_talk = list("This place smells like my bro.","Hu
 
 
 
-var/bombini_saved = 0
-
-/obj/machinery/computer/shuttle_bus
-	name = "John's Bus"
-	icon_state = "shuttle"
-	machine_registry_idx = MACHINES_SHUTTLECOMPS
-
-/obj/machinery/computer/shuttle_bus/embedded
-	icon_state = "shuttle-embed"
-	density = 0
-	layer = EFFECTS_LAYER_1 // Must appear over cockpit shuttle wall thingy.
-
-
-	north
-		dir = NORTH
-		pixel_y = 25
-
-	east
-		dir = EAST
-		pixel_x = 25
-
-	south
-		dir = SOUTH
-		pixel_y = -25
-
-	west
-		dir = WEST
-		pixel_x = -25
-
-
-
-
-/obj/machinery/computer/shuttle_bus/attack_hand(mob/user as mob)
-	if(..())
-		return
-	var/dat = "<a href='byond://?src=\ref[src];close=1'>Close</a><BR><BR>"
-
-	switch(johnbus_location)
-		if(0)
-			dat += "Shuttle Location: Diner"
-		if(1)
-			dat += "Shuttle Location: Frontier Space Owlery"
-		if(2)
-			dat += "Shuttle Location: Old Mining Station"
-		if(3)
-			dat += "Shuttle Location: Juicer Schweet's"
-
-
-	dat += "<BR>"
-	switch(johnbus_destination)
-		if(0)
-			dat += "Shuttle Destination: Diner"
-		if(1)
-			dat += "Shuttle Destination: Frontier Space Owlery"
-		if(2)
-			dat += "Shuttle Destination: Old Mining Station"
-		if(3)
-			dat += "Shuttle Destination: Juicer Schweet's"
-
-	dat += "<BR><BR>"
-	if(johnbus_active)
-		dat += "Status: Cruisin"
-	else
-		dat += "<a href='byond://?src=\ref[src];dine=1'>Set Target: Diner</a><BR>"
-		dat += "<a href='byond://?src=\ref[src];owle=1'>Set Target: Owlery</a><BR>"
-#ifndef UNDERWATER_MAP
-		dat += "<a href='byond://?src=\ref[src];mine=1'>Set Target: Old Mining Station</a><BR>"
-#endif
-		if(johnbill_shuttle_fartnasium_active)
-			dat += "<a href='byond://?src=\ref[src];fart=1'>Set Target: Juicer Schweet's</a><BR>"
-		dat += "<BR>"
-		if (johnbus_location != johnbus_destination)
-			dat += "<a href='byond://?src=\ref[src];send=1'>Send It</a><BR><BR>"
-		else
-			dat += "Let's go somewhere else, ok?<BR>"
-
-	user.Browse(dat, "window=shuttle")
-	onclose(user, "shuttle")
-	return
-
-/obj/machinery/computer/shuttle_bus/Topic(href, href_list)
-	if(..())
-		return
-	if ((usr.contents.Find(src) || (in_range(src, usr) && istype(src.loc, /turf))) || (issilicon(usr)))
-		src.add_dialog(usr)
-
-		if (href_list["send"])
-			if(!johnbus_active)
-				var/turf/T = get_turf(src)
-				johnbus_active = 1
-				for(var/obj/machinery/computer/shuttle_bus/C in machine_registry[MACHINES_SHUTTLECOMPS])
-
-					C.visible_message("<span class='alert'>John is starting up the engines, this could take a minute!</span>")
-
-				for(var/obj/machinery/computer/shuttle_bus/embedded/B in machine_registry[MACHINES_SHUTTLECOMPS])
-					T = get_turf(B)
-					SPAWN_DBG(1 DECI SECOND)
-						playsound(T, "sound/effects/ship_charge.ogg", 60, 1)
-						sleep(3 SECONDS)
-						playsound(T, "sound/machines/weaponoverload.ogg", 60, 1)
-						src.visible_message("<span class='alert'>The shuttle is making a hell of a racket!</span>")
-						sleep(5 SECONDS)
-						playsound(T, "sound/impact_sounds/Machinery_Break_1.ogg", 60, 1)
-						for(var/mob/living/M in range(src.loc, 10))
-							shake_camera(M, 5, 2)
-
-						sleep(2 SECONDS)
-						playsound(T, "sound/effects/creaking_metal2.ogg", 70, 1)
-						sleep(3 SECONDS)
-						src.visible_message("<span class='alert'>The shuttle engine alarms start blaring!</span>")
-						playsound(T, "sound/machines/pod_alarm.ogg", 60, 1)
-						var/obj/decal/fakeobjects/shuttleengine/smokyEngine = locate() in get_area(src)
-						var/datum/effects/system/harmless_smoke_spread/smoke = new /datum/effects/system/harmless_smoke_spread()
-						smoke.set_up(5, 0, smokyEngine)
-						smoke.start()
-						sleep(4 SECONDS)
-						playsound(T, "sound/machines/boost.ogg", 60, 1)
-						for(var/mob/living/M in range(src.loc, 10))
-							shake_camera(M, 10, 4)
-
-				T = get_turf(src)
-				SPAWN_DBG(25 SECONDS)
-					playsound(T, "sound/effects/flameswoosh.ogg", 70, 1)
-					call_shuttle()
-
-		else if (href_list["dine"])
-			if(!johnbus_active)
-				johnbus_destination = 0
-				var/turf/T = get_turf(src)
-				playsound(T, "sound/machines/glitch1.ogg", 60, 1)
-
-		else if (href_list["owle"])
-			if(!johnbus_active)
-				johnbus_destination = 1
-				var/turf/T = get_turf(src)
-				playsound(T, "sound/machines/glitch1.ogg", 60, 1)
-
-		else if (href_list["mine"])
-			if(!johnbus_active)
-				johnbus_destination = 2
-				var/turf/T = get_turf(src)
-				playsound(T, "sound/machines/glitch1.ogg", 60, 1)
-
-		else if (href_list["fart"])
-			if(!johnbus_active)
-				johnbus_destination = 3
-				var/turf/T = get_turf(src)
-				playsound(T, "sound/machines/glitch1.ogg", 60, 1)
-
-
-		else if (href_list["close"])
-			src.remove_dialog(usr)
-			usr.Browse(null, "window=shuttle")
-
-	src.add_fingerprint(usr)
-	src.updateUsrDialog()
-	return
-
-
-/obj/machinery/computer/shuttle_bus/proc/call_shuttle()
-	var/area/end_location = null
-	var/area/start_location = null
-
-	switch(johnbus_destination)
-		if(0)
-			end_location = locate(/area/shuttle/john/diner)
-		if(1)
-			end_location = locate(/area/shuttle/john/owlery)
-		if(2)
-			end_location = locate(/area/shuttle/john/mining)
-		if(3)
-			end_location = locate(/area/shuttle/john/grillnasium)
-
-	switch(johnbus_location)
-		if(0)
-			start_location = locate(/area/shuttle/john/diner)
-			start_location.move_contents_to(end_location)
-
-		if(1)
-			start_location = locate(/area/shuttle/john/owlery)
-
-			if(!bombini_saved)
-				for(var/obj/npc/trader/bee/b in start_location)
-					bombini_saved = 1
-					for(var/mob/M in start_location)
-						boutput(M, "<span class='notice'>It would be great if things worked that way, but they don't. You'll need to find what <b>Bombini</b> is missing, now.</span>")
-
-			start_location.move_contents_to(end_location)
-
-		if(2)
-			start_location = locate(/area/shuttle/john/mining)
-			start_location.move_contents_to(end_location)
-
-		if(3)
-			start_location = locate(/area/shuttle/john/grillnasium)
-			start_location.move_contents_to(end_location)
-
-	johnbus_location = johnbus_destination
-
-	johnbus_active = 0
-
-	for(var/obj/machinery/computer/shuttle_bus/C in machine_registry[MACHINES_TURRETS])
-
-		C.visible_message("<span class='alert'>John's Juicin' Bus has Moved!</span>")
-
-	return
 
 obj/decal/fakeobjects/thrust
 	icon = 'icons/effects/effects.dmi'
@@ -816,7 +628,7 @@ Urs' Hauntdog critter
 		if(act == "scream" && src.emote_check(voluntary, 50))
 			var/turf/T = get_turf(src)
 			var/hogg = pick("sound/voice/hagg_vorbis.ogg","sound/voice/hogg_vorbis.ogg","sound/voice/hogg_vorbis_the.ogg","sound/voice/hogg_vorbis_screams.ogg","sound/voice/hogg_with_scream.ogg","sound/voice/hoooagh2.ogg","sound/voice/hoooagh.ogg",)
-			playsound(T, hogg, 60, 1)
+			playsound(T, hogg, 60, 1, channel=VOLUME_CHANNEL_EMOTE)
 			return "<span class='emote'><b>[src]</b> screeeams!</span>"
 		return null
 
@@ -835,3 +647,44 @@ Urs' Hauntdog critter
 			"You screams!")
 			var/hogg = pick("sound/voice/hagg_vorbis.ogg","sound/voice/hogg_vorbis.ogg","sound/voice/hogg_vorbis_the.ogg","sound/voice/hogg_vorbis_screams.ogg","sound/voice/hogg_with_scream.ogg","sound/voice/hoooagh2.ogg","sound/voice/hoooagh.ogg",)
 			playsound(T, hogg, 60, 1)
+			user.add_karma(1.5)
+
+// ########################
+// # Horizon  audio  logs #
+// ########################
+
+/obj/item/device/audio_log/horizon_minorcollision
+	continuous = 0
+	audiolog_messages = list("Course stady, bearing One One Zero Mark Two,",
+							"Firing thrusters.",
+							"Steady hot stuff. Keep your eyes on the grav- wait a second.",
+							"Uh, Captain- I- I don't-",
+							"Shuttlecraft One to NSS Horizon abort maneuver! ABORT MANEUVER WE ARE NOT CLEA-",
+							"*Thunderous scraping, metallic sound*",
+							"Negative, Captain. Engines offline, there's some kind of well between *click*",
+							"What. the fuck is that. *Creaking, static*")
+	audiolog_speakers = list("Female voice",
+							"Juvenile voice",
+							"Female voice",
+							"Juvenile voice",
+							"Female voice",
+							"???",
+							"NSS Horizon",
+							"???")
+
+
+/mob/living/carbon/human/geneticist
+	is_npc = 1
+	uses_mobai = 1
+	real_name = "Juicer Gene"
+	gender = NEUTER
+	max_health = 50
+
+	New()
+		..()
+		src.ai = new /datum/aiHolder/human/geneticist(src)
+		src.equip_new_if_possible(/obj/item/clothing/shoes/dress_shoes, slot_shoes)
+		src.equip_new_if_possible(/obj/item/clothing/under/rank/geneticist, slot_w_uniform)
+		src.equip_new_if_possible(/obj/item/clothing/suit/labcoat/pathology, slot_wear_suit)
+		if(prob(50))
+			src.equip_new_if_possible(/obj/item/clothing/glasses/regular, slot_glasses)

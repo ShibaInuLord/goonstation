@@ -11,7 +11,7 @@
 	var/imgh = 400
 	var/popup_win = 1
 	layer = EFFECTS_LAYER_BASE
-	plane = PLANE_NOSHADOW_BELOW
+	plane = PLANE_NOSHADOW_ABOVE
 
 	examine()
 		if (usr.client && src.popup_win)
@@ -522,7 +522,7 @@
 			icon_state = "ptoe"
 
 		poster_y4nt
-			name = "\improper NanoTrasen poster"
+			name = "\improper NanoTrasen recruitment poster"
 			desc = "A huge poster that reads 'I want YOU for NT!'"
 			icon = 'icons/obj/decals/posters.dmi'
 			icon_state = "you_4_nt"
@@ -656,6 +656,12 @@
 						src.desc = "A poster for \"<em>fuck II: Plumb Fuckled.\"</em>"
 						src.icon_state = "fuckII"
 
+		fuck1 //do not add this to the random sign rotation, fuck I is a long-lost relic overshadowed entirely by its successor
+			name = "\proper fuck"
+			desc = "No... it can't be... the original?! This is a vintage!!"
+			icon = 'icons/obj/decals/posters.dmi'
+			icon_state = "fuckI"
+
 		fuck2
 			name = "\proper fuck II"
 			desc = "A poster for \"<em>fuck II: Plumb Fuckled.\"</em>"
@@ -683,6 +689,14 @@
 			icon = 'icons/effects/96x32.dmi' //Maybe not the best place but it was the only ready 96x32 dmi
 			icon_state = "garbagegarbs"
 			bound_width  = 96
+
+		fuq3
+			desc = "Our premier line of clothing is so diverse, you'll be sure to cry 'What le fuq?'"
+			name = "Fuq III"
+			icon = 'icons/effects/96x32.dmi'
+			icon_state = "fuq3"
+			bound_width  = 96
+			plane = -99
 
 ///////////////////////////////////////
 // AZUNGAR'S HEAD OF DEPARTMENT ITEMS// + FIREBARRAGE HELPED TOO BUT HE SMELLS
@@ -728,7 +742,7 @@
 
 					if (1)
 						playsound(src.loc, "sound/machines/click.ogg", 50, 1)
-						var/obj/item/hosmedal/M = new /obj/item/hosmedal()
+						var/obj/item/clothing/suit/hosmedal/M = new /obj/item/clothing/suit/hosmedal()
 						M.desc = src.desc
 						user.put_in_hand_or_drop(M)
 						user.visible_message("[user] takes the medal from the frame.", "You take the medal out of the frame.")
@@ -748,7 +762,7 @@
 					qdel(W)
 
 				if (src.usageState == 2)
-					if (istype(W, /obj/item/hosmedal))
+					if (istype(W, /obj/item/clothing/suit/hosmedal))
 						playsound(src.loc, "sound/machines/click.ogg", 50, 1)
 						user.u_equip(W)
 						qdel(W)
@@ -769,10 +783,10 @@
 
 			proc/get_award_text(var/datum/mind/M)
 				var/hosname = "Anonymous"
-				if(M && M.current && M.current.client && M.current.client.preferences && M.current.client.preferences.name_last)
+				if(M?.current?.client?.preferences?.name_last)
 					hosname = M.current.client.preferences.name_last
 				var/hosage = 50
-				if(M && M.current && M.current.bioHolder && M.current.bioHolder.age)
+				if(M?.current?.bioHolder?.age)
 					hosage = M.current.bioHolder.age
 				. = "Awarded to [pick("Pvt.","Sgt","Cpl.","Maj.","Cpt.","Col.","Gen.")] "
 				. += "[hosname] for [pick("Outstanding","Astounding","Incredible")] "
@@ -850,7 +864,7 @@
 
 			proc/get_award_text_hop(var/datum/mind/M)
 				var/hopname = "Anonymous"
-				if(M && M.current && M.current.client && M.current.client.preferences && M.current.client.preferences.name_last)
+				if(M?.current?.client?.preferences?.name_last)
 					hopname = M.current.client.preferences.name_last
 				. = "The first [pick("Space","NT", "Golden","Silver")] "
 				. += "[pick("Dollar","Doubloon","Buck","Peso","Credit")] earned by [hopname]"
@@ -930,7 +944,7 @@
 
 			proc/get_award_text_rd(var/datum/mind/M)
 				var/rdname = "Anonymous"
-				if(M && M.current && M.current.client && M.current.client.preferences && M.current.client.preferences.name_last)
+				if(M?.current?.client?.preferences?.name_last)
 					rdname = M.current.client.preferences.name_last
 				. += "It says \ [rdname] has been awarded the degree of [pick("Associate", "Bachelor")] of [pick("arts","science")]"
 				. += "Master of [pick("arts","science")],"
@@ -990,3 +1004,19 @@
 							user.visible_message("[user] places glass back in the frame.", "You place the glass back in the frame.")
 							src.usageState = 0
 							src.icon_state = "mdlicense"
+
+/obj/decal/poster/wallsign/pod_build
+	name = "poster"
+	icon = 'icons/obj/decals/posters_64x32.dmi'
+	icon_state = "nt-pod-poster"
+	popup_win = 1
+
+	show_popup_win(var/client/C)
+		if (!C || !src.popup_win)
+			return
+		C.Browse(grabResource("html/how_to_build_a_pod.html"),"window=how_to_build_a_pod;size=[imgw]x[imgh];title=How to Build a Space Pod")
+
+/obj/decal/poster/wallsign/pod_build/nt
+	icon_state = "nt-pod-poster"
+/obj/decal/poster/wallsign/pod_build/sy
+	icon_state = "sy-pod-poster"

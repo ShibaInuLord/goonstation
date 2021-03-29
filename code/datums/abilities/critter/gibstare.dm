@@ -39,8 +39,8 @@
 	onEnd()
 		..()
 		var/mob/ownerMob = owner
-		if(owner && ownerMob && target && (target in view(owner)) && gibstare && gibstare.cooldowncheck())
-			logTheThing("combat", ownerMob, target, "gibs %target% using martin gib stare.")
+		if(ownerMob && target && (target in view(owner)) && gibstare?.cooldowncheck())
+			logTheThing("combat", ownerMob, target, "gibs [constructTarget(target,"combat")] using martin gib stare.")
 			for(var/mob/O in AIviewers(ownerMob))
 				O.show_message("<span class='alert'><b>[target.name]'s</b> head explodes!</span>", 1)
 			if (target == owner)

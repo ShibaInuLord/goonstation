@@ -48,22 +48,30 @@
 		var/mob/MT = target
 		if (!MT.reagents)
 			boutput(holder.owner, __red("That does not hold reagents, apparently."))
+			return 1
 		if (!stealthy)
 			holder.owner.visible_message(__red("<b>[holder.owner] stings [target]!</b>"))
 		else
 			holder.owner.show_message(__blue("We stealthily sting [target]."))
-		if(MT.reagents)
-			MT.reagents.add_reagent(venom_id, inject_amount)
+		MT.reagents?.add_reagent(venom_id, inject_amount)
 
-		if (ishuman(MT))
+		if (isliving(MT))
 			MT:was_harmed(holder.owner, special = "ling")
-		logTheThing("combat", holder.owner, MT, "stings %target% with [name] as a changeling [log_loc(holder.owner)].")
+		logTheThing("combat", holder.owner, MT, "stings [constructTarget(MT,"combat")] with [name] as a changeling [log_loc(holder.owner)].")
 
 	neurotoxin
 		name = "Neurotoxic Sting"
 		desc = "Transfer some neurotoxin into your target."
 		icon_state = "stingneuro"
 		venom_id = "neurotoxin"
+
+	//neuro replacement for RP
+	capulettium
+		name = "Capulettium Sting"
+		desc = "Transfer some capulettium into your target."
+		icon_state = "stingneuro"
+		venom_id = "capulettium"
+		inject_amount = 20
 
 	lsd
 		name = "Hallucinogenic Sting"
@@ -97,10 +105,10 @@
 				if (target.reagents.total_volume >= target.reagents.maximum_volume)
 					return 0
 				var/max_amount = min(15,target.reagents.maximum_volume - target.reagents.total_volume)
-				target.reagents.add_reagent("blood", max_amount, targeting.dna_sting_target)
+				target.reagents?.add_reagent("blood", max_amount, targeting.dna_sting_target)
 				return 0
 			var/mob/MT = target
-			MT.reagents.add_reagent("blood", 15, targeting.dna_sting_target)
+			MT.reagents?.add_reagent("blood", 15, targeting.dna_sting_target)
 			return 0
 
 	fartonium

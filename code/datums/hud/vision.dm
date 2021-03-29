@@ -1,11 +1,12 @@
 /datum/hud/vision // generic overlays for modifying the mobs vision
-	var/obj/screen/hud
+	var/atom/movable/screen/hud
 		scan
 		color_mod
 		dither
 		flash
 
 	New()
+		..()
 		scan = create_screen("", "", 'icons/mob/hud_common.dmi', "scan", "WEST, SOUTH to EAST, NORTH", HUD_LAYER_UNDER_1)
 		scan.mouse_opacity = 0
 		scan.alpha = 0
@@ -53,20 +54,29 @@
 
 		set_color_mod(color)
 			color_mod.color = color
-			if (color == "#000000")
+			if (color == "#000000" || color == "#ffffff")
 				remove_screen(color_mod)
 			else
 				add_screen(color_mod)
+				color_mod.plane = PLANE_OVERLAY_EFFECTS-1
 
 		animate_color_mod(color, duration)
 			if(color_mod.color == color)
 				return
+
+			if (color == "#000000" || color == "#ffffff")
+				remove_screen(color_mod)
+			else
+				add_screen(color_mod)
+				color_mod.plane = PLANE_OVERLAY_EFFECTS-1 //otherwise it doesnt draw. i dont know why.
+
 			animate(color_mod, color = color, time = duration)
 			SPAWN_DBG(duration + 1)
-				if (color == "#000000")
+				if (color == "#000000" || color == "#ffffff")
 					remove_screen(color_mod)
 				else
 					add_screen(color_mod)
+					color_mod.plane = PLANE_OVERLAY_EFFECTS-1 //otherwise it doesnt draw. i dont know why.
 
 		set_dither_alpha(alpha)
 			if (alpha > 0)

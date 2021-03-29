@@ -15,10 +15,10 @@
 	if (!ticker)
 		boutput(user, "You can't buckle anyone in before the game starts.")
 		return
-	if ((!( iscarbon(M) ) || get_dist(src, user) > 1 || M.loc != src.loc || user.restrained() || usr.stat))
+	if ((!( iscarbon(M) ) || get_dist(src, user) > 1 || M.loc != src.loc || user.restrained() || user.stat))
 		return
 	if (M.buckled)	return
-	if (M == usr)
+	if (M == user)
 		user.visible_message("<span class='notice'>[M] buckles in!</span>", "<span class='notice'>You buckle yourself in.</span>")
 	else
 		user.visible_message("<span class='notice'>[M] is buckled in by [user].</span>", "<span class='notice'>You buckle in [M].</span>")
@@ -53,7 +53,7 @@
 	M.visible_message("<span class='alert'>[M] has been implanted by the [src].</span>")
 
 
-	logTheThing("combat", M, "has implanted %target% with a [src.imp] implant ([src.imp.type]) at [log_loc(M)].")
+	logTheThing("combat", usr, M, "has implanted [constructTarget(M,"combat")] with a [src.imp] implant ([src.imp.type]) at [log_loc(M)].")
 	if(ishuman(M))
 		var/mob/living/carbon/human/H = M
 		H.implant.Add(src.imp)

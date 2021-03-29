@@ -71,7 +71,7 @@
 	emag_act(var/mob/user, var/obj/item/card/emag/E)
 		if (!src.emagged)
 			if (user)
-				usr.show_text("You short out the voltage regulator in the lighting circuit.", "blue")
+				user.show_text("You short out the voltage regulator in the lighting circuit.", "blue")
 			src.emagged = 1
 		else
 			if (user)
@@ -105,7 +105,7 @@
 						var/mob/living/target = M
 						if (istype(target))
 							target.apply_flash(60, 8, 0, 0, rand(2, 8), rand(1, 15), 0, 30, 100, stamina_damage = 190, disorient_time = 50)
-							logTheThing("combat", user, target, "flashes %target% with an emagged flashlight.")
+							logTheThing("combat", user, target, "flashes [constructTarget(target,"combat")] with an emagged flashlight.")
 				user.visible_message("<span class='alert'>The [src] in [user]'s hand bursts with a blinding flash!</span>", "<span class='alert'>The bulb in your hand explodes with a blinding flash!</span>")
 				on = 0
 				light_dir.update(0)
@@ -174,7 +174,7 @@
 			src.visible_message("<span class='alert'>[src] bursts open, spraying hot liquid on [src.loc]!</span>")
 			burst()
 
-	throw_impact(atom/A)
+	throw_impact(atom/A, datum/thrown_thing/thr)
 		..()
 		if (heated > 0 && on && prob(30 + (heated * 20)))
 			if(iscarbon(A))
@@ -200,6 +200,19 @@
 				burst()
 			else
 				user.visible_message("<span class='notice'><b>[user]</b> [pick("fiddles", "faffs around", "goofs around", "fusses", "messes")] with [src].</span>")
+
+/obj/item/device/light/glowstick/green_on
+	base_state = "glowstick-green"
+	icon_state = "glowstick-green0"
+	name = "emergency glowstick"
+	desc = "For emergency use only. Not for use in illegal lightswitch raves."
+	col_r = 0.0
+	col_g = 0.9
+	col_b = 0.1
+	color_name = "green"
+	New()
+		..()
+		turnon()
 
 /obj/item/device/light/glowstick/white
 	base_state = "glowstick-white"
@@ -313,8 +326,18 @@
 
 			else if (W.burning)
 				src.light(user, "<span class='alert'><b>[user]</b> lights [src] with [W]. Goddamn.</span>")
+
+			else if (W.firesource)
+				src.light(user, "<span class='alert'><b>[user]</b> lights [src] with [W].</span>")
+				W.firesource_interact()
 		else
 			return ..()
+
+	temperature_expose(datum/gas_mixture/air, temperature, volume)
+		if (src.on == 0)
+			if (temperature > (T0C + 430))
+				src.visible_message("<span class='alert'> [src] ignites!</span>", group = "candle_ignite")
+				src.light()
 
 	process()
 		if (src.on)
@@ -331,24 +354,24 @@
 		if (!src) return
 		if (!src.on)
 			src.on = 1
+			src.firesource = TRUE
 			src.hit_type = DAMAGE_BURN
 			src.force = 3
 			src.icon_state = src.icon_on
 			light.enable()
-			if (!(src in processing_items))
-				processing_items.Add(src)
+			processing_items |= src
 		return
 
 	proc/put_out(var/mob/user as mob)
 		if (!src) return
 		if (src.on)
 			src.on = 0
+			src.firesource = FALSE
 			src.hit_type = DAMAGE_BLUNT
 			src.force = 0
 			src.icon_state = src.icon_off
 			light.disable()
-			if (src in processing_items)
-				processing_items.Remove(src)
+			processing_items -= src
 		return
 
 /obj/item/device/light/candle/spooky
@@ -424,11 +447,18 @@
 
 	attack_self(mob/user as mob)
 		playsound(get_turf(src), "sound/items/penclick.ogg", 30, 1)
-		user.visible_message("<b>[user]</b> flicks [src.on ? "on" : "off"] the [src].")
 		src.on = !src.on
+		user.visible_message("<b>[user]</b> flicks [src.on ? "on" : "off"] the [src].")
 		if (src.on)
 			set_icon_state(src.icon_on)
 			src.light.enable()
 		else
 			set_icon_state(src.icon_off)
 			src.light.disable()
+
+/obj/item/device/light/lava_lamp/activated
+	New()
+		..()
+		on = 1
+		set_icon_state(src.icon_on)
+		src.light.enable()

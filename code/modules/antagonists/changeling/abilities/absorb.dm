@@ -4,6 +4,11 @@
 	id = "abom_devour"
 	icon = 'icons/mob/critter_ui.dmi'
 	icon_state = "devour_over"
+	bar_icon_state = "bar-changeling"
+	border_icon_state = "border-changeling"
+	color_active = "#d73715"
+	color_success = "#3fb54f"
+	color_failure = "#8d1422"
 	var/mob/living/target
 	var/datum/targetable/changeling/devour/devour
 
@@ -46,7 +51,7 @@
 			boutput(ownerMob, "<span class='notice'>We devour [target]!</span>")
 			ownerMob.visible_message(text("<span class='alert'><B>[ownerMob] hungrily devours [target]!</B></span>"))
 			playsound(ownerMob.loc, 'sound/voice/burp_alien.ogg', 50, 1)
-			logTheThing("combat", ownerMob, target, "devours %target% as a changeling in horror form [log_loc(owner)].")
+			logTheThing("combat", ownerMob, target, "devours [constructTarget(target,"combat")] as a changeling in horror form [log_loc(owner)].")
 
 			target.ghostize()
 			qdel(target)
@@ -78,7 +83,7 @@
 		if (!istype(T))
 			boutput(C, "<span class='alert'>This creature is not compatible with our biology.</span>")
 			return 1
-		if (ismonkey(T))
+		if (isnpcmonkey(T))
 			boutput(C, "<span class='alert'>Our hunger will not be satisfied by this lesser being.</span>")
 			return 1
 		if (T.bioHolder.HasEffect("husk"))
@@ -94,6 +99,11 @@
 	id = "change_absorb"
 	icon = 'icons/mob/critter_ui.dmi'
 	icon_state = "devour_over"
+	bar_icon_state = "bar-changeling"
+	border_icon_state = "border-changeling"
+	color_active = "#d73715"
+	color_success = "#3fb54f"
+	color_failure = "#8d1422"
 	var/mob/living/target
 	var/datum/targetable/changeling/absorb/devour
 	var/last_complete = 0
@@ -141,7 +151,7 @@
 		target.vamp_beingbitten = 1
 		ownerMob.show_message("<span class='notice'>We must hold still...</span>", 1)
 
-		if (ishuman(target))
+		if (isliving(target))
 			target:was_harmed(owner, special = "ling")
 
 	onEnd()
@@ -156,7 +166,7 @@
 				C.addDna(target)
 			boutput(ownerMob, "<span class='notice'>We have absorbed [target]!</span>")
 			ownerMob.visible_message(text("<span class='alert'><B>[ownerMob] sucks the fluids out of [target]!</B></span>"))
-			logTheThing("combat", ownerMob, target, "absorbs %target% as a changeling [log_loc(owner)].")
+			logTheThing("combat", ownerMob, target, "absorbs [constructTarget(target,"combat")] as a changeling [log_loc(owner)].")
 
 			target.dna_to_absorb = 0
 			target.death(0)
@@ -192,7 +202,7 @@
 		if (!istype(T))
 			boutput(C, "<span class='alert'>This creature is not compatible with our biology.</span>")
 			return 1
-		if (ismonkey(T))
+		if (isnpcmonkey(T))
 			boutput(C, "<span class='alert'>Our hunger will not be satisfied by this lesser being.</span>")
 			return 1
 		if (T.bioHolder.HasEffect("husk"))

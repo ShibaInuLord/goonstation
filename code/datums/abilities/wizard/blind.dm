@@ -17,13 +17,12 @@
 		holder.owner.say("YSTIGG MITAZIM")
 		..()
 
-		var/datum/effects/system/spark_spread/s = unpool(/datum/effects/system/spark_spread)
-		s.set_up(4, 1, target)
-		s.start()
+		elecflash(target)
 
 		if (target.traitHolder.hasTrait("training_chaplain"))
 			boutput(holder.owner, "<span class='alert'>[target] has divine protection from magic.</span>")
 			target.visible_message("<span class='alert'>The spell fails to work on [target]!</span>")
+			JOB_XP(target, "Chaplain", 2)
 			return
 
 		if (iswizard(target))
@@ -53,7 +52,7 @@
 				if (G.allow_blind_sight)
 					blindProtected = 1
 
-		if (holder.owner.wizard_spellpower())
+		if (holder.owner.wizard_spellpower(src))
 			target.changeStatus("weakened", 2 SECONDS)
 			if (!blindProtected)
 				target.bioHolder.AddEffect("bad_eyesight")

@@ -4,6 +4,7 @@
 /datum/targetable/critter/spider_bite
 	name = "Bite"
 	desc = "Bite a mob, doing a little damage and injecting them with your venom. (You do have venom, don't you?)"
+	icon_state = "clown_spider_bite"
 	cooldown = 200
 	targeted = 1
 	target_anything = 1
@@ -41,6 +42,9 @@
 			else
 				MT.TakeDamageAccountArmor("All", rand(1,3), 0, 0, DAMAGE_STAB)
 		return 0
+
+/datum/targetable/critter/spider_bite/cluwne
+	icon_state = "cluwne_spider_bite"
 
 // -----------------
 // Spider flail skill
@@ -107,7 +111,7 @@
 				if (prob(30))
 					holder.owner.visible_message("<span class='combat'><b>[holder.owner] bites [MT]!</b></span>",\
 					"<span class='combat'><b>You bite [MT]!</b></span>")
-				holder.owner.dir = pick(cardinal)
+				holder.owner.set_dir(pick(cardinal))
 				holder.owner.pixel_x = rand(-2,2) * 2
 				holder.owner.pixel_y = rand(-2,2) * 2
 				sleep(0.4 SECONDS)
@@ -126,6 +130,7 @@
 /datum/targetable/critter/spider_drain
 	name = "Drain"
 	desc = "Drain a dead human."
+	icon_state = "clown_spider_drain"
 	cooldown = 300
 	targeted = 1
 	target_anything = 1
@@ -155,6 +160,9 @@
 			boutput(holder.owner, __red("That is too far away to drain."))
 			return 1
 		var/mob/living/carbon/human/H = target
+		if(!istype(H) || !isdead(H))
+			boutput(holder.owner, "<span class='alert'>That isn't a dead human.</span>")
+			return 1
 		var/mob/living/critter/spider/S = holder.owner
 		holder.owner.visible_message("<span class='combat'><b>[holder.owner] starts draining the fluids out of [H]!</b></span>",\
 		"<span class='combat'><b>You start draining the fluids out of [H]!</b></span>")
@@ -180,7 +188,9 @@
 				if (H.bioHolder)
 					H.bioHolder.AddEffect("husk")
 				playsound(get_turf(holder.owner), "sound/misc/fuse.ogg", 50, 1)
-				holder.owner.set_loc(get_step(holder.owner, pick(alldirs)))
+				var/list/turf/neightbors = getNeighbors(get_turf(holder.owner), alldirs)
+				if(length(neightbors))
+					holder.owner.set_loc(pick(neightbors))
 				SPAWN_DBG(0)
 					var/obj/icecube/cube = new /obj/icecube(get_turf(H), H)
 					H.set_loc(cube)
@@ -207,14 +217,16 @@
 								"<span class='combat'><b>You encase [H] in ice!</b></span>")
 
 				if (istype(S) && S.babyspider)
-					SPAWN_DBG(0)
-						S.grow_up()
+					S.grow_up()
 
 			doCooldown()
 			disabled = 0
 			holder.owner.pixel_x = 0
 			holder.owner.pixel_y = 0
 			holder.owner.canmove = 1
+
+/datum/targetable/critter/spider_drain/cluwne
+	icon_state = "cluwne_spider_drain"
 
 // -----------------
 // Baby clownspider kick
@@ -264,6 +276,7 @@
 /datum/targetable/critter/clownspider_trample
 	name = "Trample"
 	desc = "Kick the SHIT out of a mob with all eight legs."
+	icon_state = "clown_spider_trample"
 	cooldown = 300
 	targeted = 1
 	target_anything = 1
@@ -309,7 +322,7 @@
 				MT.canmove = 0
 				if (MT.loc)
 					holder.owner.set_loc(MT.loc)
-				holder.owner.changeStatus("stunned", 1 SECOND)
+				MT.changeStatus("stunned", 1 SECOND)
 				if (holder.owner.getStatusDuration("stunned") || holder.owner.getStatusDuration("weakened") || holder.owner.getStatusDuration("paralysis"))
 					break
 				playsound(get_turf(holder.owner), "sound/impact_sounds/flesh_break_1.ogg", 50, 1)
@@ -321,7 +334,7 @@
 					MT.TakeDamageAccountArmor("All", rand(5,8), 0, 0, DAMAGE_STAB)
 				holder.owner.visible_message("<span class='combat'><b>[holder.owner] stomps on [MT]!</b></span>",\
 				"<span class='combat'><b>You stomp on [MT]!</b></span>")
-				holder.owner.dir = pick(cardinal)
+				holder.owner.set_dir(pick(cardinal))
 				holder.owner.pixel_x = rand(-2,2) * 2
 				holder.owner.pixel_y = rand(-2,2) * 2
 				sleep(0.4 SECONDS)
@@ -337,17 +350,31 @@
 
 /datum/targetable/critter/clownspider_trample/cluwne
 	sound_kick = "cluwnestep"
+	icon_state = "cluwne_spider_trample"
 
 /datum/targetable/critter/vomitegg
 	name = "Vomit Egg"
 	desc = "Lay Egg is True. Horribly, horribly true."
+	icon_state = "clown_spider_egg"
 	cooldown = 150
 	targeted = 1
 	target_anything = 1
+	var/egg_path = /obj/item/reagent_containers/food/snacks/ingredient/egg/critter/clown
+	var/flavor_text = "clown"
 
 	cast(atom/T)
-		var/obj/item/reagent_containers/food/snacks/ingredient/egg/critter/clown/ammo = new(holder.owner.loc)
-		SPAWN_DBG(0.5 SECONDS)
+		var/obj/item/reagent_containers/food/snacks/ingredient/egg/critter/ammo = new egg_path(holder.owner.loc)
+		ammo.parent = holder.owner
 		ammo.throw_at(T, 32, 2)
-
 		doCooldown()
+
+		if (istype(holder.owner, /mob/living/critter/spider/clownqueen))
+			var/mob/living/critter/spider/clownqueen/queen = holder.owner
+			if (islist(queen.babies) && queen.babies.len > queen.max_defensive_babies)
+				boutput(queen, "<span class='alert'><b>You make a new baby, but know in your [flavor_text] heart that it does not love you.</b></span>")
+
+
+/datum/targetable/critter/vomitegg/cluwne
+	icon_state = "cluwne_spider_egg"
+	egg_path = /obj/item/reagent_containers/food/snacks/ingredient/egg/critter/cluwne
+	flavor_text = "cluwne"
